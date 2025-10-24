@@ -1,0 +1,193 @@
+{
+  "personal": {
+    "name": "Louise Ferreira",
+    "title": "Machine Learning Engineer",
+    "tagline": "ML Engineer | AI Ethics Researcher",
+    "bio": "Building fair, ethical AI systems to protect marginalized communities. Specializing in NLP, bias detection, and algorithmic justice.",
+    "location": "Rio de Janeiro, Brazil",
+    "email": "louisesfer@gmail.com",
+    "github": "https://github.com/louiseluli",
+    "linkedin": "https://www.linkedin.com/in/louisesfer",
+    "website": "https://louiseluli.github.io"
+  },
+  
+  "about": {
+    "lead": "I am a multifaceted, deeply reflective, and intellectually audacious Black Brazilian woman whose work pulses with resistance, tenderness, and transformation.",
+    "description": [
+      "Originally from Mesquita in the Baixada Fluminense region of Rio de Janeiro, my story is one of relentless transcendence. I bridge the margins and center of global conversations on power, technology, race, and desire.",
+      "My academic trajectory—from International Relations to Cultural Studies and now Artificial Intelligence—is revolutionary. At every stage, I reclaim the right to question: Who defines intelligence? Who is protected in cyberspace? Who gets to feel safe, loved, desired, or heard in the digital age?"
+    ],
+    "identity_tags": [
+      "Black Woman",
+      "Queer",
+      "Global South",
+      "AI Ethics",
+      "Intersectionality"
+    ]
+  },
+  
+  "experience": [
+    {
+      "company": "CloudWalk",
+      "role": "Machine Learning Engineer",
+      "location": "Remote",
+      "period": "August 2025 - Present",
+      "description": [
+        "Leading design and delivery of AI-enabled MVPs, from topic taggers to intent detection systems",
+        "Collaborating with business stakeholders on production-ready ML solutions",
+        "Implementing transformer-based models for NLP applications"
+      ],
+      "tech_stack": ["Python", "PyTorch", "HuggingFace", "Azure"]
+    },
+    {
+      "company": "Inter-American Development Bank (IDB)",
+      "role": "Intern - Data Consolidation & Process Optimization",
+      "location": "Washington D.C., United States",
+      "period": "June 2025 - August 2025",
+      "description": [
+        "Integrated Python AI pipeline with C# microservices backend",
+        "Developed hybrid chatbot for internal knowledge management",
+        "Architected RAG pipeline with HuggingFace and Azure OpenAI"
+      ],
+      "tech_stack": ["Python", "C#", "RAG", "Flask"]
+    },
+    {
+      "company": "Ernst & Young (EY)",
+      "role": "Cyber Security Consultant (Data Protection)",
+      "location": "Remote",
+      "period": "January 2022 - September 2024",
+      "description": [
+        "Automated data protection policy monitoring using Microsoft Purview",
+        "Investigated anomalous data behaviors to prevent leaks and unauthorized access",
+        "Achieved SPOT Award for excellence in data governance"
+      ],
+      "tech_stack": ["Microsoft Purview", "Symantec DLP", "BigID", "Collibra"]
+    }
+  ],
+  
+  "projects": [
+    {
+      "title": "Fairness & Governance Framework",
+      "icon": "fas fa-balance-scale-right",
+      "description": "Developed reusable bias detection and mitigation framework using Fairlearn & AIF360. Prototyped system for quantifying risks in classification models - a key component of ethical AI governance.",
+      "tech_stack": ["Python", "Fairlearn", "AIF360", "SHAP"],
+      "links": {
+        "demo": "#",
+        "github": "#",
+        "documentation": "#"
+      }
+    },
+    {
+      "title": "Cinema Analysis Data Product",
+      "icon": "fas fa-film",
+      "description": "Built full data product from ingestion to UI, featuring 800+ line Streamlit application powered by custom Python ETL pipeline and normalized SQLite database. Analyzed 140k+ titles.",
+      "tech_stack": ["Python", "Streamlit", "SQLite", "ETL"],
+      "links": {
+        "demo": "pages/cinema.html",
+        "github": "#"
+      }
+    },
+    {
+      "title": "Internal RAG Assistant",
+      "icon": "fas fa-robot",
+      "description": "Led design and implementation of production-level chatbots for document retrieval. Architected Python/Flask and C#/.NET backends with RAG pipeline using HuggingFace and Azure OpenAI.",
+      "tech_stack": ["Python", "Flask", "RAG", "Azure OpenAI"],
+      "links": {
+        "documentation": "#"
+      }
+    },
+    {
+      "title": "Information Retrieval System",
+      "icon": "fas fa-search",
+      "description": "Built gold-standard evaluation framework with 20 complex queries. Developed automated precision/recall calculation system for search algorithm improvement.",
+      "tech_stack": ["Python", "Information Retrieval", "Evaluation Metrics"],
+      "links": {
+        "github": "#"
+      }
+    }
+  ],
+  
+  "education": [
+    {
+      "institution": "University of Essex",
+      "degree": "MSc Artificial Intelligence and its Applications",
+      "location": "Colchester, United Kingdom",
+      "period": "October 2024 - Present",
+      "scholarship": "Chevening/Lemann Scholar"
+    },
+    {
+      "institution": "Jagiellonian University",
+      "degree": "Master of Arts in Cultural Studies (Transatlantic Studies)",
+      "location": "Kraków, Poland",
+      "period": "October 2014 - October 2016"
+    },
+    {
+      "institution": "Federal University of Santa Catarina",
+      "degree": "Bachelor's in International Relations",
+      "location": "Florianópolis, Brazil",
+      "period": "March 2009 - April 2013"
+    }
+  ],
+  
+  "skills": {
+    "ai_ml": [
+      "Encoder/Decoder Models (Transformers)",
+      "LLM Fine-Tuning",
+      "Time Series Forecasting",
+      "Causal Inference",
+      "Statistical Analysis",
+      "RAG Systems"
+    ],
+    "frameworks": [
+      "PyTorch",
+      "TensorFlow",
+      "Scikit-learn",
+      "HuggingFace",
+      "Fairlearn",
+      "AIF360",
+      "SHAP"
+    ],
+    "languages": [
+      "Python (Advanced)",
+      "SQL",
+      "JavaScript",
+      "C#"
+    ],
+    "tools": [
+      "Docker",
+      "Azure",
+      "Git",
+      "Power BI",
+      "Tableau"
+    ],
+    "spoken_languages": [
+      {"language": "Portuguese", "level": "Native"},
+      {"language": "English", "level": "Fluent"},
+      {"language": "French", "level": "Intermediate"},
+      {"language": "Polish", "level": "Intermediate"},
+      {"language": "Spanish", "level": "Intermediate"}
+    ]
+  },
+  
+  "awards": [
+    "Chevening/Lemann Scholarship - UK FCDO & Lemann Foundation (2024)",
+    "SPOT Awards - Ernst & Young (2022)",
+    "Most Promising Leader Award - Casimir Pulaski Foundation (2019)",
+    "Member - Black in AI"
+  ],
+  
+  "cinema_stats": {
+    "total_movies": 2282,
+    "avg_rating": 8.2,
+    "total_runtime_hours": 4872,
+    "countries": "95+"
+  },
+  
+  "theme": {
+    "primary_color": "#8B5CF6",
+    "secondary_color": "#EC4899",
+    "accent_color": "#10B981",
+    "dark_bg": "#0F172A",
+    "light_bg": "#1E293B"
+  }
+}
