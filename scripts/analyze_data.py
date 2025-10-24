@@ -1,18 +1,42 @@
+#!/usr/bin/env python3
 """
 Cinema Data Analysis
 Generate insights and statistics from watched movies
 """
 
-import pandas as pd
 import json
+import os
 from collections import Counter
 from datetime import datetime
-import os
+from pathlib import Path
+from typing import Optional
+import numpy as np
 
-def load_data(filepath='data/Watched.csv'):
-    """Load the watched movies dataset"""
-    df = pd.read_csv(filepath)
-    print(f"Loaded {len(df)} movies")
+import pandas as pd
+
+WATCHLIST_CANDIDATES = [
+    Path("data/Watched.csv"),
+    Path("pages/Watched.csv"),
+    Path("/mnt/data/Watched.csv"),
+    Path("/mnt/project/Watched.csv"),
+]
+
+def resolve_watchlist(cli_arg: Optional[str] = None) -> Path:
+    if cli_arg:
+        p = Path(cli_arg).expanduser().resolve()
+        if p.exists():
+            return p
+        raise FileNotFoundError(f"Watchlist not found at: {p}")
+    for p in WATCHLIST_CANDIDATES:
+        if p.exists():
+            return p.resolve()
+    tried = "\n  - " + "\n  - ".join(str(p) for p in WATCHLIST_CANDIDATES)
+    raise FileNotFoundError("Could not find Watched.csv. I looked in:" + tried)
+
+def load_data(filepath: Optional[str] = None) -> pd.DataFrame:
+    fp = resolve_watchlist(filepath)
+    df = pd.read_csv(fp, encoding="utf-8-sig")
+    print(f"Loaded {len(df)} movies from {fp}")
     return df
 
 def basic_stats(df):
@@ -195,12 +219,25 @@ def generate_insights(df):
         'patterns': patterns,
         'generated_at': datetime.now().isoformat()
     }
+    
+def _json_default(o):
+    # Safely convert NumPy / pandas scalars to native Python types
+    if isinstance(o, (np.integer, )):
+        return int(o)
+    if isinstance(o, (np.floating, )):
+        return float(o)
+    if isinstance(o, (np.bool_, )):
+        return bool(o)
+    return str(o)
+
 
 def save_insights(insights, output_path='data/cinema_insights.json'):
     """Save insights to JSON file"""
+    os.makedirs(Path(output_path).parent, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(insights, f, indent=2, ensure_ascii=False)
+        json.dump(insights, f, indent=2, ensure_ascii=False, default=_json_default)
     print(f"\n✅ Insights saved to {output_path}")
+
 
 def main():
     """Main execution"""
