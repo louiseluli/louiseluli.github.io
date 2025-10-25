@@ -77,7 +77,7 @@ WATCHLIST_CANDIDATES = [
     Path("/mnt/project/Watched.csv"),
 ]
 
-CHECKPOINT_PATH = Path("data/enriched_checkpoint.parquet")
+CHECKPOINT_PATH = Path("data/data/enriched_checkpoint.parquet")
 
 def merge_from_checkpoint(df: pd.DataFrame, id_col: str = "Const") -> pd.DataFrame:
     """If a checkpoint exists, outer-merge it and keep existing non-nulls from checkpoint."""
@@ -147,7 +147,7 @@ class MovieDataEnricher:
         logger.info(f"Loaded {len(df)} movies")
         return df
 
-    def download_imdb_datasets(self, output_dir: str = "data/imdb"):
+    def download_imdb_datasets(self, output_dir: str = "data/data/imdb"):
         logger.info("Ensuring IMDb datasets exist...")
         os.makedirs(output_dir, exist_ok=True)
 
@@ -184,7 +184,7 @@ class MovieDataEnricher:
         logger.info(f"Loaded {len(df)} rows from {Path(filepath).name}")
         return df
 
-    def enrich_with_imdb(self, df: pd.DataFrame, imdb_dir: str = "data/imdb") -> pd.DataFrame:
+    def enrich_with_imdb(self, df: pd.DataFrame, imdb_dir: str = "data/data/imdb") -> pd.DataFrame:
         logger.info("Enriching with IMDb data...")
         basics = self.load_imdb_dataset(os.path.join(imdb_dir, "title.basics.tsv.gz"))
         ratings = self.load_imdb_dataset(os.path.join(imdb_dir, "title.ratings.tsv.gz"))
@@ -703,7 +703,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Enrich movie data from multiple sources.")
     p.add_argument("--watchlist", help="Path to Watched.csv (defaults to auto-discovery).")
     p.add_argument("--sample", type=int, default=-1, help="Rows to enrich (-1 = ALL). Default: -1")
-    p.add_argument("--out", default="data/enriched_movies.csv", help="Output CSV.")
+    p.add_argument("--out", default="data/data/enriched_movies.csv", help="Output CSV.")
     p.add_argument("--skip-omdb", action="store_true", help="Skip the OMDB step.")
     p.add_argument("--omdb-only-missing", action="store_true",
                    help="When running OMDB, only query rows still missing OMDB fields.")
@@ -761,7 +761,7 @@ def main():
         df = enricher.enrich_with_ddd(df)
 
     # Final write
-    out_csv = Path("data/Watched_enriched.csv")
+    out_csv = Path("data/data/Watched_enriched.csv")
     enricher.save_enriched_data(df, out_csv)
 
 

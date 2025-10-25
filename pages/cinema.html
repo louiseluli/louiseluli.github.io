@@ -446,11 +446,12 @@
       // Load data function
       async function loadData() {
         const paths = [
-          "cinema_insights.json",
-          "./cinema_insights.json",
-          "data/cinema_insights.json",
-          "../data/cinema_insights.json",
-          "data/data/cinema_insights.json",
+          "../data/data/cinema_insights.json", // Priority: The main file
+          "../data/cinema_insights.json", // Fallback: Secondary location
+          "data/data/cinema_insights.json", // For running from root
+          "data/cinema_insights.json", // For running from root
+          "cinema_insights.json", // For running from pages/
+          "./cinema_insights.json", // For running from pages/
         ];
 
         for (const path of paths) {

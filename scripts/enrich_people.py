@@ -51,7 +51,7 @@ class PeopleDataEnricher:
         self.wikidata_endpoint = "https://query.wikidata.org/sparql"
         self.request_delay = 0.25
 
-    def load_imdb_people(self, filepath: str = "data/imdb/name.basics.tsv.gz") -> pd.DataFrame:
+    def load_imdb_people(self, filepath: str = "data/data/imdb/name.basics.tsv.gz") -> pd.DataFrame:
         logger.info("Loading IMDb names dataset...")
         with gzip.open(filepath, "rt", encoding="utf-8") as f:
             df = pd.read_csv(f, sep="\t", na_values="\\N", low_memory=False)
@@ -59,7 +59,7 @@ class PeopleDataEnricher:
         return df
 
     def extract_people_from_movies(self, movies_df: pd.DataFrame,
-                                   principals_path: str = "data/imdb/title.principals.tsv.gz") -> List[str]:
+                               principals_path: str = "data/data/imdb/title.principals.tsv.gz") -> List[str]:
         logger.info("Extracting people from watched movies...")
         with gzip.open(principals_path, "rt", encoding="utf-8") as f:
             principals = pd.read_csv(f, sep="\t", na_values="\\N", low_memory=False)
@@ -256,8 +256,8 @@ def parse_args():
     p.add_argument("--watchlist", help="Path to Watched.csv (defaults to auto-discovery).")
     p.add_argument("--sample", type=int, default=-1,
                    help="Number of people to enrich (use -1 for ALL). Default: -1")
-    p.add_argument("--out", default="data/enriched_people.csv",
-                   help="Output CSV (default: data/enriched_people.csv)")
+    p.add_argument("--out", default="data/data/enriched_people.csv",
+               help="Output CSV (default: data/data/enriched_people.csv)")
     p.add_argument(
         "--providers",
         type=str,
