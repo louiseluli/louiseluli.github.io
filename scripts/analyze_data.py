@@ -12,7 +12,8 @@ from typing import Optional, Dict
 import numpy as np
 import pandas as pd
 import warnings
-warnings.filterwarnings('ignore')
+warnings.f
+from scipy import stats as sp_stats
 
 try:
     from sklearn.cluster import KMeans
@@ -343,46 +344,101 @@ def actor_analysis(people_df, movies_df):
     sorted_actors = dict(sorted(actor_stats.items(), key=lambda x: x[1]['appearances'], reverse=True)[:30])
     return {'total_actors': len(actors), 'top_actors': sorted_actors, 'actors_analyzed': len(actor_stats)}
 
-def ml_analysis(df, genre_data):
+def ml_analysis(df):
+    """
+    Performs TF-IDF on keywords/overviews and K-Means clustering to find "taste clusters".
+    """
     if not HAS_SKLEARN:
         return {'note': 'Install scikit-learn for ML features'}
-    print("\n🤖 PERFORMING ML ANALYSIS...")
+
+    print("\n🤖 PERFORMING ML TASTE ANALYSIS...")
     results = {}
+
+    # 1. Prepare text data
+    text_data = []
+    movie_indices = []
+
+    # Combine keywords and overview for a richer feature set
+    keywords_col = pick_col(df, 'tmdb_keywords', 'keywords').fillna("[]")
+    overview_col = pick_col(df, 'tmdb_overview', 'overview', 'plot').fillna("")
+
+    for idx, (keywords_json, overview) in enumerate(zip(keywords_col, overview_col)):
+        text = ""
+        try:
+            # Keywords are often stored as a JSON list of strings
+            k_list = json.loads(keywords_json)
+            if isinstance(k_list, list):
+                text += " ".join(k_list)
+        except:
+            # Fallback if it's just a comma-separated string
+            text += str(keywords_json).replace(",", " ")
+
+        text += " " + str(overview)
+
+        if text.strip():
+            text_data.append(text)
+            movie_indices.append(df.index[idx])
+
+    if len(text_data) < 20:
+        print("  ⚠️  Not enough text data (keywords/overviews) for ML analysis.")
+        return {'note': 'Not enough data for ML analysis'}
+
+    # 2. Vectorize text using TF-IDF
+    print(f"  Vectorizing text from {len(text_data)} movies...")
     try:
-        print("  📊 Clustering movies by genre...")
-        genre_by_movie = genre_data.get('genre_by_movie', {})
-        all_genres = list(set(g for genres in genre_by_movie.values() for g in genres))
-        if len(all_genres) > 0 and len(genre_by_movie) > 10:
-            genre_matrix = []
-            movie_indices = []
-            for idx, genres in genre_by_movie.items():
-                if len(genres) > 0:
-                    row = [1 if g in genres else 0 for g in all_genres]
-                    genre_matrix.append(row)
-                    movie_indices.append(idx)
-            if len(genre_matrix) > 10:
-                genre_matrix = np.array(genre_matrix)
-                n_clusters = min(8, len(genre_matrix) // 50)
-                if n_clusters >= 2:
-                    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-                    clusters = kmeans.fit_predict(genre_matrix)
-                    cluster_genres = {}
-                    for i in range(n_clusters):
-                        cluster_mask = clusters == i
-                        cluster_movies = [movie_indices[j] for j, mask in enumerate(cluster_mask) if mask]
-                        cluster_genre_counts = Counter()
-                        for idx in cluster_movies[:50]:
-                            cluster_genre_counts.update(genre_by_movie.get(idx, []))
-                        top_genres = [g for g, _ in cluster_genre_counts.most_common(3)]
-                        cluster_name = ' + '.join(top_genres) if top_genres else f'Cluster {i}'
-                        cluster_genres[cluster_name] = {
-                            'size': int(cluster_mask.sum()),
-                            'percentage': round(float(cluster_mask.sum() / len(clusters) * 100), 2)
-                        }
-                    results['genre_clustering'] = cluster_genres
-                    print(f"  ✓ Created {n_clusters} genre clusters")
+        vectorizer = TfidfVectorizer(
+            max_features=1000,  # Top 1000 terms
+            stop_words='english',
+            min_df=5,           # Must appear in at least 5 movies
+            max_df=0.7          # Ignore terms in > 70% of movies
+        )
+        tfidf_matrix = vectorizer.fit_transform(text_data)
+        feature_names = vectorizer.get_feature_names_out()
     except Exception as e:
-        print(f"  ⚠️  Clustering error: {e}")
+        print(f"  ⚠️  TF-IDF vectorization error: {e}")
+        return {'note': f'TF-IDF error: {e}'}
+
+    # 3. K-Means Clustering
+    n_clusters = 5  # Let's define 5 core taste clusters
+    print(f"  Clustering into {n_clusters} taste clusters...")
+    try:
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+        clusters = kmeans.fit_predict(tfidf_matrix)
+
+        # 4. Analyze and label clusters
+        cluster_analysis = {}
+        for i in range(n_clusters):
+            cluster_mask = (clusters == i)
+            cluster_size = int(cluster_mask.sum())
+
+            # Find top terms for this cluster
+            cluster_tfidf = tfidf_matrix[cluster_mask]
+            top_term_indices = cluster_tfidf.sum(axis=0).A1.argsort()[-10:][::-1]
+            top_terms = [feature_names[idx] for idx in top_term_indices]
+
+            # Find top genres in this cluster
+            cluster_movie_indices = [movie_indices[j] for j, mask in enumerate(cluster_mask) if mask]
+            genre_col = pick_col(df.loc[cluster_movie_indices], 'genres_merged', 'Genres', 'genres').dropna()
+            genre_counts = Counter()
+            for genres_str in genre_col:
+                genre_counts.update([g.strip() for g in str(genres_str).split(',') if g.strip()])
+            top_genres = [g for g, _ in genre_counts.most_common(3)]
+
+            cluster_analysis[f"Cluster {i+1}"] = {
+                'size': cluster_size,
+                'percentage': round((cluster_size / len(text_data)) * 100, 1),
+                'top_terms': top_terms,
+                'top_genres': top_genres,
+                'label': f"{' / '.join(top_genres)}" # A simple label
+            }
+
+        results['taste_clusters'] = cluster_analysis
+        print(f"  ✓ Created {n_clusters} taste clusters")
+
+    except Exception as e:
+        print(f"  ⚠️  K-Means clustering error: {e}")
+        return {'note': f'K-Means error: {e}'}
+
     return results
 
 def prepare_graph_data(df, genres, decades, directors):
@@ -420,7 +476,7 @@ def generate_insights(df):
     if people_df is not None:
         actors = actor_analysis(people_df, df)
     
-    ml_results = ml_analysis(df, genres)
+    ml_results = ml_analysis(df)
     graph_data = prepare_graph_data(df, genres, decades, directors)
     
     print(f"\n✅ Analysis complete!")
