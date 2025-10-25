@@ -22,11 +22,29 @@ from urllib.parse import quote
 import pandas as pd
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 # ---------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("enrich_movies")
+
+def log_resume_summary(df: pd.DataFrame):
+    counts = {}
+    for col in ("tmdb_done", "omdb_done", "wikidata_done", "ddd_done"):
+        if col in df.columns:
+            try:
+                counts[col] = int(df[col].fillna(False).astype(bool).sum())
+            except Exception:
+                counts[col] = 0
+    if counts:
+        logger.info("Resume summary (already done): " + ", ".join(f"{k}={v}" for k, v in counts.items()))
+
 
 # ---------------------------------------------------------------------
 # Path resolution helpers
@@ -37,6 +55,32 @@ WATCHLIST_CANDIDATES = [
     Path("/mnt/data/Watched.csv"),
     Path("/mnt/project/Watched.csv"),
 ]
+
+CHECKPOINT_PATH = Path("data/enriched_checkpoint.parquet")
+
+def merge_from_checkpoint(df: pd.DataFrame, id_col: str = "Const") -> pd.DataFrame:
+    """If a checkpoint exists, outer-merge it and keep existing non-nulls from checkpoint."""
+    if not CHECKPOINT_PATH.exists():
+        return df
+    try:
+        df_ckpt = pd.read_parquet(CHECKPOINT_PATH)
+        if id_col in df_ckpt.columns:
+            merged = df.merge(df_ckpt.drop_duplicates(id_col), on=id_col, how="left", suffixes=("", "_ckpt"))
+            # Prefer latest non-null values from checkpoint
+            for col in list(merged.columns):
+                if col.endswith("_ckpt"):
+                    base = col[:-5]
+                    merged[base] = merged[base].combine_first(merged[col])
+            drop_cols = [c for c in merged.columns if c.endswith("_ckpt")]
+            if drop_cols:
+                merged = merged.drop(columns=drop_cols)
+            logger.info(f"Merged prior checkpoint: {len(df_ckpt)} rows enriched previously.")
+            return merged
+    except Exception as e:
+        logger.warning(f"Could not merge from checkpoint {CHECKPOINT_PATH}: {e}")
+    return df
+
+
 
 def resolve_watchlist(cli_arg: Optional[str]) -> Path:
     """Return a valid path to Watched.csv, trying common locations."""
@@ -184,6 +228,75 @@ class MovieDataEnricher:
                 genres.add("Science Fiction" if name.lower() in ("sci-fi", "science fiction") else name)
         return ", ".join(sorted(x for x in genres if x))
 
+    def _process_with_resume(
+        self,
+        df: pd.DataFrame,
+        provider_name: str,
+        per_row_fn,
+        done_col: str,
+        id_col: str = "Const",
+        checkpoint_path: Path = CHECKPOINT_PATH,
+        checkpoint_every: int = 50,
+    ) -> pd.DataFrame:
+        # Load prior checkpoint, merge on id
+        if checkpoint_path.exists():
+            try:
+                df_ckpt = pd.read_parquet(checkpoint_path)
+                if id_col in df_ckpt.columns:
+                    df = df.merge(df_ckpt.drop_duplicates(id_col), on=id_col, how="left", suffixes=("", "_ckpt"))
+                    for col in df.columns:
+                        if col.endswith("_ckpt"):
+                            base = col[:-5]
+                            df[base] = df[base].combine_first(df[col])
+                    df = df.drop(columns=[c for c in df.columns if c.endswith("_ckpt")])
+            except Exception as e:
+                logger.warning(f"Could not load checkpoint {checkpoint_path}: {e}")
+
+        if done_col not in df.columns:
+            df[done_col] = False
+
+        total = len(df)
+        processed_since_ckpt = 0
+
+        for idx, row in df.iterrows():
+            if bool(row.get(done_col, False)):
+                continue
+            try:
+                updates = per_row_fn(row)
+            except KeyboardInterrupt:
+                logger.info("Interrupted. Writing checkpoint before exiting...")
+                checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(checkpoint_path, index=False)
+                raise
+            except Exception as e:
+                logger.warning(f"{provider_name} failed for {row.get(id_col)}: {e}")
+                updates = {}
+
+            if updates:
+                for k, v in updates.items():
+                    if k not in df.columns:
+                        df[k] = None
+                    df.at[idx, k] = v
+
+            if updates.get("_ok"):
+                df.at[idx, done_col] = True
+
+            if idx % 50 == 0:
+                logger.info(f"Processing {provider_name} {idx+1}/{total}")
+
+            processed_since_ckpt += 1
+            if processed_since_ckpt >= checkpoint_every:
+                checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(checkpoint_path, index=False)
+                processed_since_ckpt = 0
+                time.sleep(self.request_delay)
+
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(checkpoint_path, index=False)
+        return df
+
+
+
     def extract_tmdb_data(self, tmdb_data: Dict) -> Dict:
         if not tmdb_data:
             return {}
@@ -226,28 +339,59 @@ class MovieDataEnricher:
 
     def enrich_with_tmdb(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Enriching with TMDB...")
-        for col in ["tmdb_id", "tmdb_tagline", "tmdb_keywords", "tmdb_recommendations",
-                    "tmdb_similar", "tmdb_images", "genres_merged"]:
-            if col not in df.columns:
-                df[col] = None
 
-        for idx, row in df.iterrows():
-            if idx % 50 == 0:
-                logger.info(f"Processing TMDB {idx + 1}/{len(df)}")
-            imdb_id = row["Const"]
-            tmdb_data = self.get_tmdb_movie_details(imdb_id)
-            if not tmdb_data:
-                continue
-            ex = self.extract_tmdb_data(tmdb_data)
-            df.at[idx, "tmdb_id"] = ex.get("tmdb_id")
-            df.at[idx, "tmdb_tagline"] = ex.get("tagline")
-            df.at[idx, "tmdb_keywords"] = json.dumps(ex.get("keywords", []))
-            df.at[idx, "tmdb_recommendations"] = json.dumps(ex.get("recommendations", []))
-            df.at[idx, "tmdb_similar"] = json.dumps(ex.get("similar", []))
-            df.at[idx, "tmdb_images"] = json.dumps(ex.get("images", {}))
-            df.at[idx, "genres_merged"] = self.merge_genres(row.get("Genres", row.get("genres")), ex.get("genres", []))
-        logger.info("TMDB enrichment complete.")
-        return df
+        # Make sure expected columns exist
+        required_cols = [
+            "tmdb_id", "tmdb_tagline", "tmdb_keywords", "tmdb_recommendations",
+            "tmdb_similar", "tmdb_images", "genres_merged", "tmdb_overview",
+            "tmdb_budget", "tmdb_revenue", "tmdb_runtime",
+        ]
+        for c in required_cols + ["tmdb_done"]:
+            if c not in df.columns:
+                df[c] = None
+        if "tmdb_done" not in df.columns:
+            df["tmdb_done"] = False
+
+        def _per_row(row):
+            imdb_id = row.get("Const")
+            if not imdb_id or not isinstance(imdb_id, str):
+                return {}
+
+            # Skip if we already have a TMDB id and consider it done
+            if row.get("tmdb_id"):
+                return {"_ok": True}
+
+            tmdb = self.get_tmdb_movie_details(imdb_id)
+            if not tmdb:
+                # Not fatal — just mark as tried; don’t set _ok so it can retry later
+                return {}
+
+            # Extract and merge data
+            extracted = self.extract_tmdb_data(tmdb)
+            merged_genres = self.merge_genres(row.get("genres"), extracted.get("genres", []))
+
+            return {
+                "tmdb_id": extracted.get("tmdb_id"),
+                "tmdb_tagline": extracted.get("tagline"),
+                "tmdb_keywords": json.dumps(extracted.get("keywords", []), ensure_ascii=False),
+                "tmdb_recommendations": json.dumps(extracted.get("recommendations", []), ensure_ascii=False),
+                "tmdb_similar": json.dumps(extracted.get("similar", []), ensure_ascii=False),
+                "tmdb_images": json.dumps(extracted.get("images", {}), ensure_ascii=False),
+                "genres_merged": merged_genres,
+                "tmdb_overview": extracted.get("overview"),
+                "tmdb_budget": extracted.get("budget"),
+                "tmdb_revenue": extracted.get("revenue"),
+                "tmdb_runtime": extracted.get("runtime"),
+                "_ok": True,
+            }
+
+        return self._process_with_resume(
+            df=df,
+            provider_name="TMDB",
+            per_row_fn=_per_row,
+            done_col="tmdb_done",
+        )
+
 
     def get_omdb_data(self, imdb_id: str) -> Optional[Dict]:
         try:
@@ -263,21 +407,56 @@ class MovieDataEnricher:
 
     def enrich_with_omdb(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Enriching with OMDB...")
-        for col in ["omdb_poster", "omdb_plot"]:
-            if col not in df.columns:
-                df[col] = None
 
-        for idx, row in df.iterrows():
-            if idx % 50 == 0:
-                logger.info(f"Processing OMDB {idx + 1}/{len(df)}")
-            imdb_id = row["Const"]
-            om = self.get_omdb_data(imdb_id)
-            if om:
-                df.at[idx, "omdb_poster"] = om.get("poster")
-                df.at[idx, "omdb_plot"] = om.get("plot")
-            time.sleep(0.1)
-        logger.info("OMDB enrichment complete.")
-        return df
+        for c in ["omdb_json", "omdb_imdbRating", "omdb_imdbVotes", "omdb_metascore", "omdb_done"]:
+            if c not in df.columns:
+                df[c] = None
+        if "omdb_done" not in df.columns:
+            df["omdb_done"] = False
+
+        if not self.omdb_api_key:
+            logger.warning("No OMDB API key configured; skipping OMDB.")
+            return df
+
+        def _per_row(row):
+            imdb_id = row.get("Const")
+            if not imdb_id or not isinstance(imdb_id, str):
+                return {}
+
+            # If we already have a stored OMDB blob or rating, consider done
+            if pd.notna(row.get("omdb_json")) or pd.notna(row.get("omdb_imdbRating")):
+                return {"_ok": True}
+
+            try:
+                params = {"apikey": self.omdb_api_key, "i": imdb_id, "plot": "full"}
+                r = requests.get(self.omdb_base_url, params=params, timeout=20)
+                r.raise_for_status()
+                data = r.json()
+                if data.get("Response") == "False":
+                    # Do not mark ok to allow retry later (e.g., once key is fixed)
+                    logger.warning(f"OMDB negative response for {imdb_id}: {data.get('Error')}")
+                    return {}
+                return {
+                    "omdb_json": json.dumps(data, ensure_ascii=False),
+                    "omdb_imdbRating": data.get("imdbRating"),
+                    "omdb_imdbVotes": data.get("imdbVotes"),
+                    "omdb_metascore": data.get("Metascore"),
+                    "_ok": True,
+                }
+            except requests.HTTPError as e:
+                # Your logs show 401 — most likely an invalid/expired key.
+                logger.warning(f"OMDB fetch failed for {imdb_id}: {e}")
+                return {}
+            finally:
+                time.sleep(self.request_delay)
+
+        return self._process_with_resume(
+            df=df,
+            provider_name="OMDB",
+            per_row_fn=_per_row,
+            done_col="omdb_done",
+        )
+
 
     def query_wikidata(self, imdb_id: str) -> Optional[Dict]:
         try:
@@ -311,63 +490,179 @@ class MovieDataEnricher:
 
     def enrich_with_wikidata(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Enriching with Wikidata...")
-        for col in ["wiki_logo_image", "wiki_main_subject", "wiki_film_poster",
-                    "wiki_based_on", "wiki_set_in_period", "wiki_inspired_by"]:
-            if col not in df.columns:
-                df[col] = None
 
-        for idx, row in df.iterrows():
-            if idx % 50 == 0:
-                logger.info(f"Processing Wikidata {idx + 1}/{len(df)}")
-            imdb_id = row["Const"]
-            wd = self.query_wikidata(imdb_id)
-            if wd:
-                df.at[idx, "wiki_logo_image"] = wd.get("logoImage", {}).get("value")
-                df.at[idx, "wiki_main_subject"] = wd.get("mainSubjectLabel", {}).get("value")
-                df.at[idx, "wiki_film_poster"] = wd.get("filmPoster", {}).get("value")
-                df.at[idx, "wiki_based_on"] = wd.get("basedOnLabel", {}).get("value")
-                df.at[idx, "wiki_set_in_period"] = wd.get("setPeriod", {}).get("value")
-                df.at[idx, "wiki_inspired_by"] = wd.get("inspiredByLabel", {}).get("value")
-            time.sleep(0.5)
-        logger.info("Wikidata enrichment complete.")
-        return df
+        for c in ["wikidata_qid", "wikidata_json", "wikidata_done"]:
+            if c not in df.columns:
+                df[c] = None
+        if "wikidata_done" not in df.columns:
+            df["wikidata_done"] = False
 
-    def save_enriched_data(self, df: pd.DataFrame, output_path: Path):
-        ensure_dir(Path(output_path))
-        logger.info(f"Saving enriched data to {output_path}")
-        df.to_csv(output_path, index=False)
-        logger.info(f"Saved {len(df)} rows")
+        def _per_row(row):
+            imdb_id = row.get("Const")
+            if not imdb_id:
+                return {}
+            # Already enriched? skip
+            if bool(row.get("wikidata_done")) or pd.notna(row.get("wikidata_qid")):
+                return {"_ok": True}
+
+            query = f"""
+            SELECT ?item WHERE {{
+            ?item wdt:P345 "{imdb_id}" .
+            }} LIMIT 1
+            """
+
+            # simple retry/backoff on timeouts or transient errors
+            last_err = None
+            for attempt in range(3):
+                try:
+                    r = requests.get(
+                        self.wikidata_endpoint,
+                        params={"format": "json", "query": query},
+                        headers={"User-Agent": "louise-portfolio/1.0 (resume-enricher)"},
+                        timeout=60 if attempt == 2 else 30,  # give extra time on last try
+                    )
+                    r.raise_for_status()
+                    data = r.json()
+                    bindings = data.get("results", {}).get("bindings", [])
+                    if not bindings:
+                        # No QID found—don’t mark as done so you can try again later if desired
+                        return {}
+                    qid = bindings[0]["item"]["value"].rsplit("/", 1)[-1]
+                    return {
+                        "wikidata_qid": qid,
+                        "wikidata_json": json.dumps(data, ensure_ascii=False),
+                        "_ok": True,
+                    }
+                except Exception as e:
+                    last_err = e
+                    time.sleep(1.5 * (attempt + 1))
+            logger.warning(f"Wikidata fetch failed for {imdb_id}: {last_err}")
+            return {}
+        return self._process_with_resume(
+            df=df,
+            provider_name="WIKIDATA",
+            per_row_fn=_per_row,
+            done_col="wikidata_done",
+        )
+        
+    def enrich_with_ddd(self, df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("Enriching with DoesTheDogDie...")
+
+        # ensure columns exist
+        for c in ["ddd_json", "ddd_done"]:
+            if c not in df.columns:
+                df[c] = None
+        if "ddd_done" not in df.columns:
+            df["ddd_done"] = False
+
+        def _per_row(row):
+            title = row.get("Title") or row.get("originalTitle")
+            year = row.get("Year") or row.get("startYear")
+            if not title:
+                return {}
+            if bool(row.get("ddd_done")) or pd.notna(row.get("ddd_json")):
+                return {"_ok": True}
+            try:
+                q = f"{title} {year}".strip()
+                url = f"{self.dtd_base_url}?q={quote(q)}"
+                r = requests.get(url, timeout=30)
+                r.raise_for_status()
+                text = r.text.strip()
+                if not text:
+                    return {}  # no data, allow retry later
+                return {"ddd_json": text, "_ok": True}
+            except Exception as e:
+                logger.warning(f"DDD fetch failed for '{title}': {e}")
+                return {}
+            finally:
+                time.sleep(self.request_delay)
+
+        return self._process_with_resume(
+            df=df,
+            provider_name="DDD",
+            per_row_fn=_per_row,
+            done_col="ddd_done",
+        )
+    def save_enriched_data(self, df: pd.DataFrame, out_csv: Path):
+        """Write the human CSV and update the resume checkpoint."""
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(out_csv, index=False, encoding="utf-8-sig")
+        CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(CHECKPOINT_PATH, index=False)
+        logger.info(f"Wrote {len(df)} rows to {out_csv} and checkpoint to {CHECKPOINT_PATH}")
+
+    
+
+
 
     def create_summary_report(self, df: pd.DataFrame) -> Dict:
+        # Coerce possibly-string numeric fields safely
+        avg_rating = None
+        if "averageRating" in df:
+            avg_rating = pd.to_numeric(df["averageRating"], errors="coerce").mean()
+            if pd.isna(avg_rating):
+                avg_rating = None
+            else:
+                avg_rating = float(avg_rating)
+
+        total_runtime_hours = None
+        if "runtimeMinutes" in df:
+            rt_sum = pd.to_numeric(df["runtimeMinutes"], errors="coerce").fillna(0).sum()
+            total_runtime_hours = float(rt_sum) / 60.0
+
+        # Year range: prefer explicit Year; fall back to startYear
+        year_range = "N/A"
+        if "Year" in df:
+            y = pd.to_numeric(df["Year"], errors="coerce")
+            if not y.dropna().empty:
+                year_range = f"{int(y.min())} - {int(y.max())}"
+        if year_range == "N/A" and "startYear" in df:
+            sy = pd.to_numeric(df["startYear"], errors="coerce")
+            if not sy.dropna().empty:
+                year_range = f"{int(sy.min())} - {int(sy.max())}"
+
         return {
             "total_movies": int(len(df)),
             "movies_with_tmdb_data": int(df["tmdb_id"].notna().sum()) if "tmdb_id" in df else 0,
-            "movies_with_omdb_data": int(df["omdb_poster"].notna().sum()) if "omdb_poster" in df else 0,
-            "movies_with_wikidata": int(df["wiki_film_poster"].notna().sum()) if "wiki_film_poster" in df else 0,
+            "movies_with_omdb_data": int(df["omdb_json"].notna().sum()) if "omdb_json" in df else 0,
+            "movies_with_wikidata": int(df["wikidata_qid"].notna().sum()) if "wikidata_qid" in df else 0,
             "unique_genres": len(set(g for s in df.get("genres_merged", pd.Series([])).dropna() for g in s.split(", "))),
-            "avg_rating": float(df.get("IMDb Rating", pd.Series(dtype=float)).mean()) if "IMDb Rating" in df else None,
-            "total_runtime_hours": float(df.get("Runtime (mins)", pd.Series(dtype=float)).sum() / 60) if "Runtime (mins)" in df else None,
-            "year_range": (
-                f"{int(df['Year'].min())} - {int(df['Year'].max())}"
-                if "Year" in df and not df["Year"].isna().all()
-                else "N/A"
-            ),
+            "avg_rating": avg_rating,
+            "total_runtime_hours": total_runtime_hours,
+            "year_range": year_range,
         }
+
 
 # ---------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------
 def parse_args():
+    import argparse
     p = argparse.ArgumentParser(description="Enrich movie data from multiple sources.")
     p.add_argument("--watchlist", help="Path to Watched.csv (defaults to auto-discovery).")
-    p.add_argument("--sample", type=int, default=-1,
-                   help="Number of rows to enrich (use -1 for ALL). Default: -1")
-    p.add_argument("--out", default="data/enriched_movies.csv",
-                   help="Output CSV (default: data/enriched_movies.csv)")
+    p.add_argument("--sample", type=int, default=-1, help="Rows to enrich (-1 = ALL). Default: -1")
+    p.add_argument("--out", default="data/enriched_movies.csv", help="Output CSV.")
+    p.add_argument("--skip-omdb", action="store_true", help="Skip the OMDB step.")
+    p.add_argument("--omdb-only-missing", action="store_true",
+                   help="When running OMDB, only query rows still missing OMDB fields.")
+    p.add_argument("--providers",
+                   type=str,
+                   
+                   default="imdb,tmdb,omdb,wikidata,ddd",
+                   help="Comma-separated list of providers to run (default: all).")
     return p.parse_args()
+
 
 def main():
     args = parse_args()
+
+    omdb_key = os.getenv("OMDB_API_KEY")
+    tmdb_key = os.getenv("TMDB_API_KEY")
+    if not tmdb_key:
+        logger.warning("TMDB_API_KEY not found in environment; TMDB lookups may fail.")
+    if not omdb_key:
+        logger.warning("OMDB_API_KEY not found; OMDB step will be skipped unless --skip-omdb is passed.")
+
 
     TMDB_API_KEY = os.getenv("TMDB_API_KEY", "YOUR_TMDB_API_KEY")
     OMDB_API_KEY = os.getenv("OMDB_API_KEY", "YOUR_OMDB_API_KEY")
@@ -376,25 +671,45 @@ def main():
 
     # Resolve & load watchlist
     watchlist_path = resolve_watchlist(args.watchlist)
-    df = enricher.load_watchlist(watchlist_path)
+    providers = [p.strip().lower() for p in args.providers.split(",") if p.strip()]
 
-    # Ensure IMDb datasets (download if missing)
-    enricher.download_imdb_datasets()
+    # Load (or start) the working dataframe
+    df = enricher.load_watchlist(resolve_watchlist(args.watchlist))
+    # 🔧 NEW: pull in everything previously enriched so we never “lose” columns/results on save
+    df = merge_from_checkpoint(df)
+    log_resume_summary(df)
 
-    # IMDb enrichment
-    df = enricher.enrich_with_imdb(df)
 
-    # API enrichments
-    df_enrich = df.copy() if args.sample is None or args.sample < 0 else df.head(args.sample).copy()
-    df_enrich = enricher.enrich_with_tmdb(df_enrich)
-    df_enrich = enricher.enrich_with_omdb(df_enrich)
-    df_enrich = enricher.enrich_with_wikidata(df_enrich)
+    # Always ensure IMDb cache exists if imdb requested
+    if "imdb" in providers:
+        enricher.download_imdb_datasets()
+        df = enricher.enrich_with_imdb(df)
+
+    # Run selected online providers with resume/checkpoint behavior
+    if "tmdb" in providers:
+        df = enricher.enrich_with_tmdb(df)
+
+    if "omdb" in providers and not args.skip_omdb:
+        df = enricher.enrich_with_omdb(df)
+
+    if "wikidata" in providers:
+        df = enricher.enrich_with_wikidata(df)
+
+    if "ddd" in providers:
+        df = enricher.enrich_with_ddd(df)
+
+    # Final write
+    out_csv = Path("data/Watched_enriched.csv")
+    enricher.save_enriched_data(df, out_csv)
+
+
 
 
     # Save & report
     out_path = Path(args.out)
-    enricher.save_enriched_data(df_enrich, out_path)
-    report = enricher.create_summary_report(df_enrich)
+    enricher.save_enriched_data(df, out_path)
+    report = enricher.create_summary_report(df)
+
 
 
     print("\n" + "=" * 50)
