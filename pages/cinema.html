@@ -52,6 +52,26 @@
         margin-bottom: 1rem;
       }
 
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--light);
+        color: var(--text);
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        margin-bottom: 2rem;
+        transition: all 0.3s;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .back-button:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        transform: translateX(-5px);
+      }
+
       .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -164,11 +184,124 @@
         background: var(--primary);
         transform: scale(1.05);
       }
+
+      .highlights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .highlight-card {
+        background: var(--dark);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        transition: all 0.3s;
+      }
+
+      .highlight-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-3px);
+      }
+
+      .highlight-card i {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+      }
+
+      .highlight-card h4 {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .highlight-card p {
+        color: var(--text);
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0;
+      }
+
+      .directors-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .director-card {
+        background: var(--dark);
+        padding: 1.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        transition: all 0.3s;
+      }
+
+      .director-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-3px);
+      }
+
+      .director-icon {
+        font-size: 2rem;
+        color: var(--primary);
+      }
+
+      .director-info h3 {
+        margin-bottom: 0.25rem;
+        color: var(--text);
+      }
+
+      .director-info p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .tab-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .tab-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        padding: 1rem 2rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-bottom: 2px solid transparent;
+      }
+
+      .tab-btn.active {
+        color: var(--text);
+        border-bottom-color: var(--primary);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
     </style>
-    <link rel="stylesheet" href="../css/cinema-dashboard.css" />
+    <link rel="stylesheet" href="cinema-dashboard.css" />
   </head>
   <body>
     <div class="container">
+      <a href="index.html" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back to Portfolio
+      </a>
+
       <div class="header">
         <h1><i class="fas fa-film"></i> Cinema Analytics</h1>
         <p style="color: var(--muted); font-size: 1.2rem">
@@ -187,323 +320,427 @@
       </div>
 
       <div id="error" style="display: none"></div>
-      <div id="content" style="display: none"></div>
+      <div id="content" style="display: none">
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="overview">
+            <i class="fas fa-chart-bar"></i> Overview
+          </button>
+          <button class="tab-btn" data-tab="data">
+            <i class="fas fa-database"></i> Data
+          </button>
+          <button class="tab-btn" data-tab="insights">
+            <i class="fas fa-brain"></i> Insights
+          </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content active" id="overview">
+          <!-- Stats Grid -->
+          <div id="stats-container"></div>
+
+          <!-- Charts -->
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-theater-masks"></i> Genre Distribution
+            </h2>
+            <div class="chart-wrapper">
+              <canvas id="genreChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-calendar"></i> Movies by Decade
+            </h2>
+            <div class="chart-wrapper">
+              <canvas id="decadeChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Top Directors -->
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-user-tie"></i> Top Directors
+            </h2>
+            <div id="directors-container"></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="data">
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-clock"></i> Runtime Analysis
+            </h2>
+            <div class="chart-wrapper">
+              <canvas id="runtimeChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-star"></i> Rating Distribution
+            </h2>
+            <div class="chart-wrapper">
+              <canvas id="ratingChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-globe"></i> Data Sources
+            </h2>
+            <div class="highlights-grid">
+              <div class="highlight-card">
+                <i class="fas fa-database"></i>
+                <h4>IMDb</h4>
+                <p>Core metadata</p>
+              </div>
+              <div class="highlight-card">
+                <i class="fas fa-film"></i>
+                <h4>TMDB</h4>
+                <p>Enhanced details</p>
+              </div>
+              <div class="highlight-card">
+                <i class="fas fa-info-circle"></i>
+                <h4>OMDB</h4>
+                <p>Additional info</p>
+              </div>
+              <div class="highlight-card">
+                <i class="fas fa-book"></i>
+                <h4>Wikidata</h4>
+                <p>Rich metadata</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="insights">
+          <div id="ml-insights-container"></div>
+          <div id="actors-container"></div>
+        </div>
+      </div>
     </div>
 
+    <script src="cinema-dashboard.js"></script>
     <script>
-      // Try multiple paths
-      const DATA_PATHS = [
-        "../data/data/cinema_insights.json",
-        "data/data/cinema_insights.json",
-        "../data/cinema_insights.json",
-        "data/cinema_insights.json",
-        "./data/data/cinema_insights.json",
-        "./data/cinema_insights.json",
-      ];
+      // Tab functionality
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tabId = btn.dataset.tab;
 
-      let chartsData = {};
+          // Update buttons
+          document
+            .querySelectorAll(".tab-btn")
+            .forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
 
+          // Update content
+          document.querySelectorAll(".tab-content").forEach(content => {
+            content.classList.remove("active");
+          });
+          document.getElementById(tabId).classList.add("active");
+        });
+      });
+
+      // Load data function
       async function loadData() {
-        console.log("🔍 Searching for cinema_insights.json...");
+        const paths = [
+          "cinema_insights.json",
+          "./cinema_insights.json",
+          "data/cinema_insights.json",
+          "../data/cinema_insights.json",
+          "data/data/cinema_insights.json",
+        ];
 
-        for (const path of DATA_PATHS) {
+        for (const path of paths) {
           try {
-            console.log(`Trying: ${path}`);
             const response = await fetch(path);
-
             if (response.ok) {
-              const data = await response.json();
-              console.log(`✅ Success! Loaded from: ${path}`);
-              console.log("Data:", data);
-              return data;
+              console.log(`✅ Loaded data from: ${path}`);
+              return await response.json();
             }
           } catch (error) {
-            console.log(`❌ Failed: ${path} - ${error.message}`);
+            console.log(`⚠️ Failed to load from: ${path}`);
           }
         }
-
         throw new Error("Could not load cinema_insights.json from any path");
       }
 
-      function showError(message, paths) {
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("error").style.display = "block";
-        document.getElementById("error").innerHTML = `
-                <div class="error">
-                    <h2><i class="fas fa-exclamation-triangle"></i> Error Loading Data</h2>
-                    <p style="margin: 1rem 0;">${message}</p>
-                    <p><strong>Tried these paths:</strong></p>
-                    <ul style="margin: 1rem 0; padding-left: 2rem;">
-                        ${paths.map(p => `<li><code>${p}</code></li>`).join("")}
-                    </ul>
-                    <p><strong>Solution:</strong></p>
-                    <ol style="margin: 1rem 0; padding-left: 2rem;">
-                        <li>Make sure you ran: <code>python scripts/analyze_data.py</code></li>
-                        <li>Check that <code>data/data/cinema_insights.json</code> exists</li>
-                        <li>Open this page from the correct location (pages/cinema.html)</li>
-                    </ol>
-                </div>
-            `;
+      // Initialize dashboard
+      async function initDashboard() {
+        try {
+          const data = await loadData();
+          console.log("📊 Cinema data loaded:", data);
+
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("content").style.display = "block";
+
+          // Render stats
+          renderStats(data);
+
+          // Create charts
+          createGenreChart(data.genres);
+          createDecadeChart(data.decades);
+
+          // Render directors
+          renderDirectors(data.directors);
+
+          // Render ML insights if available
+          if (data.ml_insights) {
+            renderMLInsights(data.ml_insights);
+          }
+
+          // Render actors if available
+          if (data.actors) {
+            renderActors(data.actors);
+          }
+        } catch (error) {
+          console.error("❌ Error loading dashboard:", error);
+          showError(error.message);
+        }
       }
 
       function renderStats(data) {
         const stats = data.basic_stats;
-        return `
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <i class="fas fa-film"></i>
-                        <div class="stat-value">${stats.total_movies.toLocaleString()}</div>
-                        <div class="stat-label">Total Movies</div>
-                    </div>
-                    <div class="stat-box">
-                        <i class="fas fa-clock"></i>
-                        <div class="stat-value">${stats.total_runtime_hours.toLocaleString()}</div>
-                        <div class="stat-label">Hours Watched</div>
-                    </div>
-                    <div class="stat-box">
-                        <i class="fas fa-calendar"></i>
-                        <div class="stat-value">${
-                          stats.year_range.span || "N/A"
-                        }</div>
-                        <div class="stat-label">Year Span</div>
-                    </div>
-                    <div class="stat-box">
-                        <i class="fas fa-masks-theater"></i>
-                        <div class="stat-value">${
-                          data.genres.total_unique_genres
-                        }</div>
-                        <div class="stat-label">Genres</div>
-                    </div>
-                    <div class="stat-box">
-                        <i class="fas fa-user-tie"></i>
-                        <div class="stat-value">${
-                          Object.keys(data.directors).length
-                        }</div>
-                        <div class="stat-label">Directors</div>
-                    </div>
-                    ${
-                      data.actors && data.actors.total_actors
-                        ? `
-                    <div class="stat-box">
-                        <i class="fas fa-star"></i>
-                        <div class="stat-value">${data.actors.total_actors.toLocaleString()}</div>
-                        <div class="stat-label">Actors</div>
-                    </div>
-                    `
-                        : ""
-                    }
-                </div>
-            `;
+        const statsHTML = `
+          <div class="stats-grid">
+            <div class="stat-box">
+              <i class="fas fa-film"></i>
+              <div class="stat-value">${stats.total_movies.toLocaleString()}</div>
+              <div class="stat-label">Total Movies</div>
+            </div>
+            <div class="stat-box">
+              <i class="fas fa-clock"></i>
+              <div class="stat-value">${stats.total_runtime_hours.toLocaleString()}</div>
+              <div class="stat-label">Hours Watched</div>
+            </div>
+            <div class="stat-box">
+              <i class="fas fa-calendar"></i>
+              <div class="stat-value">${stats.year_range.span || "N/A"}</div>
+              <div class="stat-label">Year Span</div>
+            </div>
+            <div class="stat-box">
+              <i class="fas fa-theater-masks"></i>
+              <div class="stat-value">${data.genres.total_unique_genres}</div>
+              <div class="stat-label">Genres</div>
+            </div>
+          </div>
+        `;
+        document.getElementById("stats-container").innerHTML = statsHTML;
       }
 
-      function renderGenreChart(data) {
-        setTimeout(() => {
-          const ctx = document.getElementById("genreChart");
-          const genres = data.genres.top_10_genres;
+      function createGenreChart(genreData) {
+        const ctx = document.getElementById("genreChart").getContext("2d");
+        const topGenres = Object.entries(genreData.distribution)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10);
 
-          new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: Object.keys(genres),
-              datasets: [
-                {
-                  label: "Movies",
-                  data: Object.values(genres),
-                  backgroundColor: [
-                    "#8B5CF6",
-                    "#9333EA",
-                    "#A855F7",
-                    "#B794F4",
-                    "#C4B5FD",
-                    "#DDD6FE",
-                    "#EC4899",
-                    "#F472B6",
-                    "#10B981",
-                    "#F59E0B",
-                  ],
-                  borderRadius: 8,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: topGenres.map(g => g[0]),
+            datasets: [
+              {
+                label: "Number of Movies",
+                data: topGenres.map(g => g[1]),
+                backgroundColor: "rgba(139, 92, 246, 0.6)",
+                borderColor: "rgba(139, 92, 246, 1)",
+                borderWidth: 1,
               },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: { color: "rgba(148, 163, 184, 0.1)" },
-                },
-                x: { grid: { display: false } },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
               },
             },
-          });
-        }, 100);
-      }
-
-      function renderDecadeChart(data) {
-        setTimeout(() => {
-          const ctx = document.getElementById("decadeChart");
-          const decades = Object.keys(data.decades).sort();
-          const counts = decades.map(d => data.decades[d].count);
-
-          new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: decades.map(d => d + "s"),
-              datasets: [
-                {
-                  label: "Movies",
-                  data: counts,
-                  backgroundColor: "rgba(139, 92, 246, 0.2)",
-                  borderColor: "#8B5CF6",
-                  borderWidth: 3,
-                  fill: true,
-                  tension: 0.4,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: "#94a3b8",
                 },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: { color: "rgba(148, 163, 184, 0.1)" },
+                grid: {
+                  color: "rgba(148, 163, 184, 0.1)",
                 },
-                x: { grid: { color: "rgba(148, 163, 184, 0.1)" } },
+              },
+              x: {
+                ticks: {
+                  color: "#94a3b8",
+                },
+                grid: {
+                  display: false,
+                },
               },
             },
-          });
-        }, 100);
+          },
+        });
       }
 
-      function renderContent(data) {
-        const content = document.getElementById("content");
+      function createDecadeChart(decadeData) {
+        const ctx = document.getElementById("decadeChart").getContext("2d");
+        const decades = Object.entries(decadeData.distribution).sort(
+          (a, b) => a[0] - b[0]
+        );
 
-        content.innerHTML = `
-                ${renderStats(data)}
-                
-                <div class="chart-container">
-                    <h2 class="chart-title"><i class="fas fa-chart-bar"></i> Top Genres</h2>
-                    <div class="chart-wrapper">
-                        <canvas id="genreChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <h2 class="chart-title"><i class="fas fa-calendar-alt"></i> Movies by Decade</h2>
-                    <div class="chart-wrapper">
-                        <canvas id="decadeChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <h2 class="chart-title"><i class="fas fa-user-tie"></i> Top Directors</h2>
-                    <div class="grid">
-                        ${Object.entries(data.directors)
-                          .slice(0, 12)
-                          .map(
-                            ([name, info], i) => `
-                            <div class="card">
-                                <h3 style="color: var(--primary);">#${
-                                  i + 1
-                                } ${name}</h3>
-                                <p style="color: var(--muted); margin-top: 0.5rem;">
-                                    <i class="fas fa-film"></i> ${
-                                      info.movie_count
-                                    } movies · 
-                                    <i class="fas fa-clock"></i> ${info.total_runtime_hours.toFixed(
-                                      1
-                                    )}h
-                                </p>
-                            </div>
-                        `
-                          )
-                          .join("")}
-                    </div>
-                </div>
-                
-                ${
-                  data.actors &&
-                  data.actors.top_actors &&
-                  Object.keys(data.actors.top_actors).length > 0
-                    ? `
-                <div class="chart-container">
-                    <h2 class="chart-title"><i class="fas fa-star"></i> Top Actors</h2>
-                    <div class="grid">
-                        ${Object.entries(data.actors.top_actors)
-                          .slice(0, 20)
-                          .map(
-                            ([name, info], i) => `
-                            <div class="card">
-                                <h3 style="color: var(--secondary);">#${
-                                  i + 1
-                                } ${name}</h3>
-                                <p style="color: var(--muted); margin-top: 0.5rem;">
-                                    <i class="fas fa-film"></i> ${
-                                      info.appearances
-                                    } appearances
-                                    ${
-                                      info.birth_year
-                                        ? ` · <i class="fas fa-calendar"></i> ${info.birth_year}`
-                                        : ""
-                                    }
-                                </p>
-                            </div>
-                        `
-                          )
-                          .join("")}
-                    </div>
-                </div>
-                `
-                    : ""
-                }
-                
-                ${
-                  data.ml_insights && data.ml_insights.genre_clustering
-                    ? `
-                <div class="chart-container">
-                    <h2 class="chart-title"><i class="fas fa-robot"></i> AI Genre Clusters</h2>
-                    <div class="grid">
-                        ${Object.entries(data.ml_insights.genre_clustering)
-                          .map(
-                            ([cluster, info]) => `
-                            <div class="card">
-                                <h3 style="color: var(--accent);">${cluster}</h3>
-                                <p style="color: var(--muted); margin-top: 0.5rem;">
-                                    ${info.size} movies (${info.percentage}%)
-                                </p>
-                            </div>
-                        `
-                          )
-                          .join("")}
-                    </div>
-                </div>
-                `
-                    : ""
-                }
-            `;
-
-        content.style.display = "block";
-        renderGenreChart(data);
-        renderDecadeChart(data);
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: decades.map(d => d[0] + "s"),
+            datasets: [
+              {
+                label: "Movies Watched",
+                data: decades.map(d => d[1]),
+                borderColor: "rgba(236, 72, 153, 1)",
+                backgroundColor: "rgba(236, 72, 153, 0.1)",
+                tension: 0.4,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: "#94a3b8",
+                },
+                grid: {
+                  color: "rgba(148, 163, 184, 0.1)",
+                },
+              },
+              x: {
+                ticks: {
+                  color: "#94a3b8",
+                },
+                grid: {
+                  display: false,
+                },
+              },
+            },
+          },
+        });
       }
 
-      // Initialize
-      async function init() {
-        try {
-          const data = await loadData();
-          document.getElementById("loading").style.display = "none";
-          renderContent(data);
-        } catch (error) {
-          showError(error.message, DATA_PATHS);
-        }
+      function renderDirectors(directorsData) {
+        const topDirectors = Object.entries(directorsData)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6);
+
+        const directorsHTML = `
+          <div class="directors-grid">
+            ${topDirectors
+              .map(
+                ([name, count]) => `
+              <div class="director-card">
+                <div class="director-icon">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="director-info">
+                  <h3>${name}</h3>
+                  <p>${count} movies</p>
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+        document.getElementById("directors-container").innerHTML =
+          directorsHTML;
       }
 
-      init();
+      function renderMLInsights(mlInsights) {
+        const insightsHTML = `
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-brain"></i> ML Insights
+            </h2>
+            <div class="highlights-grid">
+              ${
+                mlInsights.genre_clusters
+                  ? `
+                <div class="highlight-card">
+                  <i class="fas fa-project-diagram"></i>
+                  <h4>Genre Clusters</h4>
+                  <p>${mlInsights.genre_clusters.n_clusters}</p>
+                </div>
+              `
+                  : ""
+              }
+              <div class="highlight-card">
+                <i class="fas fa-chart-line"></i>
+                <h4>Prediction Models</h4>
+                <p>Coming Soon</p>
+              </div>
+              <div class="highlight-card">
+                <i class="fas fa-robot"></i>
+                <h4>Recommendations</h4>
+                <p>In Development</p>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById("ml-insights-container").innerHTML =
+          insightsHTML;
+      }
+
+      function renderActors(actorsData) {
+        if (!actorsData.top_actors) return;
+
+        const actorsHTML = `
+          <div class="chart-container">
+            <h2 class="chart-title">
+              <i class="fas fa-users"></i> Top Actors
+            </h2>
+            <div class="directors-grid">
+              ${actorsData.top_actors
+                .slice(0, 6)
+                .map(
+                  actor => `
+                <div class="director-card">
+                  <div class="director-icon">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div class="director-info">
+                    <h3>${actor.name}</h3>
+                    <p>${actor.movie_count} movies</p>
+                  </div>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+        document.getElementById("actors-container").innerHTML = actorsHTML;
+      }
+
+      function showError(message) {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("error").innerHTML = `
+          <div class="error">
+            <h2><i class="fas fa-exclamation-triangle"></i> Error Loading Data</h2>
+            <p>${message}</p>
+            <p>Please ensure cinema_insights.json is in the correct location.</p>
+          </div>
+        `;
+        document.getElementById("error").style.display = "block";
+      }
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", initDashboard);
     </script>
   </body>
 </html>

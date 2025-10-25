@@ -34,11 +34,11 @@ async function loadData() {
     try {
       const response = await fetch(path);
       if (response.ok) {
-        console.log(`✅ Loaded data from: ${path}`);
+        console.log(`âœ… Loaded data from: ${path}`);
         return await response.json();
       }
     } catch (error) {
-      console.log(`⚠️  Failed to load from: ${path}`);
+      console.log(`âš ï¸  Failed to load from: ${path}`);
     }
   }
   throw new Error("Could not load cinema_insights.json from any path");
@@ -48,7 +48,7 @@ async function loadData() {
 async function initDashboard() {
   try {
     const data = await loadData();
-    console.log("📊 Cinema data loaded:", data);
+    console.log("ðŸ“Š Cinema data loaded:", data);
 
     updateStats(data.basic_stats);
     createGenreChart(data.genres);
@@ -71,7 +71,7 @@ async function initDashboard() {
       createRuntimeHistogram(data.graph_data.runtime_histogram);
     }
   } catch (error) {
-    console.error("❌ Error loading dashboard:", error);
+    console.error("âŒ Error loading dashboard:", error);
     showError(
       "Failed to load cinema analytics data. Please run: python scripts/analyze_data.py"
     );

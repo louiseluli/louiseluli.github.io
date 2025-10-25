@@ -252,7 +252,7 @@ function activateEasterEgg() {
   }, 5000);
 
   console.log(
-    "🎉 You found the Easter egg! Louise appreciates your curiosity!"
+    "ðŸŽ‰ You found the Easter egg! Louise appreciates your curiosity!"
   );
 }
 
@@ -280,7 +280,7 @@ if (yearElement) {
 
 // Console message
 console.log(
-  "%c👋 Hello, curious developer!",
+  "%cðŸ‘‹ Hello, curious developer!",
   "font-size: 20px; font-weight: bold; color: #8B5CF6;"
 );
 console.log(
