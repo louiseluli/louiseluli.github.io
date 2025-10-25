@@ -45,6 +45,27 @@ def log_resume_summary(df: pd.DataFrame):
     if counts:
         logger.info("Resume summary (already done): " + ", ".join(f"{k}={v}" for k, v in counts.items()))
 
+# Dedupe helper ------------------------------------------------
+def _squash_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    If identical column names appear (e.g., repeated merges), keep the first,
+    combine_first() with subsequent duplicates, and drop the extras.
+    """
+    name_to_first_idx = {}
+    to_drop_idx = []
+    for i, name in enumerate(df.columns):
+        if name not in name_to_first_idx:
+            name_to_first_idx[name] = i
+        else:
+            j = name_to_first_idx[name]
+            df.iloc[:, j] = df.iloc[:, j].combine_first(df.iloc[:, i])
+            to_drop_idx.append(i)
+    if to_drop_idx:
+        df = df.drop(df.columns[to_drop_idx], axis=1)
+    return df
+# ----------------------------------------------------------------------
+
+
 
 # ---------------------------------------------------------------------
 # Path resolution helpers
@@ -74,8 +95,10 @@ def merge_from_checkpoint(df: pd.DataFrame, id_col: str = "Const") -> pd.DataFra
             drop_cols = [c for c in merged.columns if c.endswith("_ckpt")]
             if drop_cols:
                 merged = merged.drop(columns=drop_cols)
+            merged = _squash_duplicate_columns(merged)
             logger.info(f"Merged prior checkpoint: {len(df_ckpt)} rows enriched previously.")
             return merged
+
     except Exception as e:
         logger.warning(f"Could not merge from checkpoint {CHECKPOINT_PATH}: {e}")
     return df
@@ -192,6 +215,12 @@ class MovieDataEnricher:
             suffixes=("", "_crew"),
         )
         logger.info("IMDb enrichment complete.")
+        
+
+        df = _squash_duplicate_columns(df)
+        logger.info("IMDb enrichment complete.")
+        return df
+
         return df
 
     def get_tmdb_movie_details(self, imdb_id: str) -> Optional[Dict]:
@@ -584,12 +613,45 @@ class MovieDataEnricher:
             done_col="ddd_done",
         )
     def save_enriched_data(self, df: pd.DataFrame, out_csv: Path):
-        """Write the human CSV and update the resume checkpoint."""
+        """Write the human CSV and update the resume checkpoint, preserving past enrichment."""
+        # 1) Merge with existing checkpoint if present (preserve older non-nulls)
+        if CHECKPOINT_PATH.exists():
+            try:
+                df_prev = pd.read_parquet(CHECKPOINT_PATH)
+                if "Const" in df_prev.columns:
+                    merged = df.merge(df_prev.drop_duplicates("Const"), on="Const", how="left", suffixes=("", "_old"))
+                    # prefer current values, backfill from _old
+                    for col in list(merged.columns):
+                        if col.endswith("_old"):
+                            base = col[:-4]
+                            if base not in merged.columns:
+                                merged[base] = merged[col]
+                            else:
+                                merged[base] = merged[base].combine_first(merged[col])
+                    merged = merged.drop(columns=[c for c in merged.columns if c.endswith("_old")])
+                    df = merged
+                    logger.info("Preserved prior enrichment while saving (merged existing checkpoint).")
+            except Exception as e:
+                logger.warning(f"Could not merge existing checkpoint while saving: {e}")
+
+        # 2) Final guard: remove any truly duplicate column names
+        df = _squash_duplicate_columns(df)
+
+        # 3) Write CSV + checkpoint
         out_csv.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(out_csv, index=False, encoding="utf-8-sig")
         CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(CHECKPOINT_PATH, index=False)
         logger.info(f"Wrote {len(df)} rows to {out_csv} and checkpoint to {CHECKPOINT_PATH}")
+
+
+        # 2) write CSV + checkpoint
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(out_csv, index=False, encoding="utf-8-sig")
+        CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(CHECKPOINT_PATH, index=False)
+        logger.info(f"Wrote {len(df)} rows to {out_csv} and checkpoint to {CHECKPOINT_PATH}")
+
 
     
 

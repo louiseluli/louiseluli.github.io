@@ -1,238 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cinema Analytics | Louise Ferreira</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
-        .dashboard {
-            min-height: 100vh;
-            padding: 100px 20px 50px;
-            background: var(--dark-bg);
-        }
-        
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .dashboard-title {
-            font-size: 3rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1rem;
-        }
-        
-        .stats-overview {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
-        }
-        
-        .stat-box {
-            background: var(--light-bg);
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid transparent;
-            transition: var(--transition);
-        }
-        
-        .stat-box:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-5px);
-        }
-        
-        .stat-box i {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-        
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-        
-        .chart-container {
-            background: var(--light-bg);
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-        
-        .chart-title {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-        
-        .coming-soon {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: var(--light-bg);
-            border-radius: 12px;
-            margin: 2rem 0;
-        }
-        
-        .coming-soon h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-        
-        .coming-soon p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .back-button {
-            display: inline-block;
-            padding: 0.875rem 2rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-        
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
-        }
+      .dashboard {
+        min-height: 100vh;
+        padding: 100px 20px 50px;
+        background: var(--dark-bg);
+      }
+
+      .dashboard-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .dashboard-title {
+        font-size: 3rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+      }
+
+      .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+      }
+
+      .stat-box {
+        background: var(--light-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid transparent;
+        transition: var(--transition);
+      }
+
+      .stat-box:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-5px);
+      }
+
+      .stat-box i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+
+      .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: var(--text-secondary);
+        font-size: 1rem;
+      }
+
+      .chart-container {
+        background: var(--light-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+      }
+
+      .chart-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-primary);
+      }
+
+      .coming-soon {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--light-bg);
+        border-radius: 12px;
+        margin: 2rem 0;
+      }
+
+      .coming-soon h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .coming-soon p {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .back-button {
+        display: inline-block;
+        padding: 0.875rem 2rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        transition: var(--transition);
+      }
+
+      .back-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="dashboard">
-        <div class="container">
-            <a href="../index.html" class="back-button">
-                <i class="fas fa-arrow-left"></i> Back to Portfolio
-            </a>
-            
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Cinema Analytics Dashboard</h1>
-                <p class="lead">Exploring 2,282+ movies through data science and cultural criticism</p>
-            </div>
-            
-            <div class="stats-overview">
-                <div class="stat-box">
-                    <i class="fas fa-film"></i>
-                    <div class="stat-value">2,280</div>
-                    <div class="stat-label">Total Movies</div>
-                </div>
-                
-                <div class="stat-box">
-                    <i class="fas fa-clock"></i>
-                    <div class="stat-value">3,901</div>
-                    <div class="stat-label">Hours Watched</div>
-                </div>
-                
-                <div class="stat-box">
-                    <i class="fas fa-star"></i>
-                    <div class="stat-value">6.45</div>
-                    <div class="stat-label">Average Rating</div>
-                </div>
-                
-                <div class="stat-box">
-                    <i class="fas fa-calendar"></i>
-                    <div class="stat-value">112</div>
-                    <div class="stat-label">Year Span (1913-2025)</div>
-                </div>
-                
-                <div class="stat-box">
-                    <i class="fas fa-masks-theater"></i>
-                    <div class="stat-value">23</div>
-                    <div class="stat-label">Unique Genres</div>
-                </div>
-                
-                <div class="stat-box">
-                    <i class="fas fa-trophy"></i>
-                    <div class="stat-value">1,141</div>
-                    <div class="stat-label">Drama Movies</div>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h2 class="chart-title"><i class="fas fa-chart-bar"></i> Top 10 Genres</h2>
-                <div class="coming-soon">
-                    <h2>🎬 Interactive Visualizations Coming Soon!</h2>
-                    <p>
-                        This dashboard will feature interactive charts and visualizations including:
-                        genre distributions, decade analysis, director rankings, rating trends,
-                        and personalized movie recommendations powered by machine learning.
-                    </p>
-                    <br>
-                    <p><strong>Top Genres from Analysis:</strong></p>
-                    <ul style="list-style: none; padding: 0; margin-top: 1rem;">
-                        <li>📊 Drama: 1,141 movies</li>
-                        <li>😄 Comedy: 1,129 movies</li>
-                        <li>💕 Romance: 965 movies</li>
-                        <li>🔪 Thriller: 705 movies</li>
-                        <li>💥 Action: 383 movies</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h2 class="chart-title"><i class="fas fa-calendar-alt"></i> Movies by Decade</h2>
-                <div class="coming-soon">
-                    <p>
-                        Decade analysis showing movie count, average ratings, and total runtime
-                        from 1910s to 2020s. The 2000s decade leads with 609 movies watched!
-                    </p>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h2 class="chart-title"><i class="fas fa-user-tie"></i> Most Watched Directors</h2>
-                <div class="coming-soon">
-                    <p>
-                        Analysis of the most-watched directors, their filmographies,
-                        average ratings, and genre preferences. Data enrichment in progress!
-                    </p>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h2 class="chart-title"><i class="fas fa-brain"></i> ML-Powered Recommendations</h2>
-                <div class="coming-soon">
-                    <h2>🤖 Machine Learning Coming Soon!</h2>
-                    <p>
-                        Get personalized movie recommendations using collaborative filtering,
-                        content-based analysis, and hybrid recommendation systems trained on
-                        your viewing history.
-                    </p>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 3rem;">
-                <a href="../index.html#cinema" class="back-button">
-                    <i class="fas fa-arrow-left"></i> Return to Main Site
-                </a>
-            </div>
+      <div class="container">
+        <a href="../index.html" class="back-button">
+          <i class="fas fa-arrow-left"></i> Back to Portfolio
+        </a>
+
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">Cinema Analytics Dashboard</h1>
+          <p class="lead">
+            Exploring 2,282+ movies through data science and cultural criticism
+          </p>
         </div>
+
+        <div class="stats-overview">
+          <div class="stat-box">
+            <i class="fas fa-film"></i>
+            <div class="stat-value">2,280</div>
+            <div class="stat-label">Total Movies</div>
+          </div>
+
+          <div class="stat-box">
+            <i class="fas fa-clock"></i>
+            <div class="stat-value">3,901</div>
+            <div class="stat-label">Hours Watched</div>
+          </div>
+
+          <div class="stat-box">
+            <i class="fas fa-star"></i>
+            <div class="stat-value">6.45</div>
+            <div class="stat-label">Average Rating</div>
+          </div>
+
+          <div class="stat-box">
+            <i class="fas fa-calendar"></i>
+            <div class="stat-value">112</div>
+            <div class="stat-label">Year Span (1913-2025)</div>
+          </div>
+
+          <div class="stat-box">
+            <i class="fas fa-masks-theater"></i>
+            <div class="stat-value">23</div>
+            <div class="stat-label">Unique Genres</div>
+          </div>
+
+          <div class="stat-box">
+            <i class="fas fa-trophy"></i>
+            <div class="stat-value">1,141</div>
+            <div class="stat-label">Drama Movies</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">
+            <i class="fas fa-chart-bar"></i> Top 10 Genres
+          </h2>
+          <div class="coming-soon">
+            <h2>🎬 Interactive Visualizations Coming Soon!</h2>
+            <p>
+              This dashboard will feature interactive charts and visualizations
+              including: genre distributions, decade analysis, director
+              rankings, rating trends, and personalized movie recommendations
+              powered by machine learning.
+            </p>
+            <br />
+            <p><strong>Top Genres from Analysis:</strong></p>
+            <ul style="list-style: none; padding: 0; margin-top: 1rem">
+              <li>📊 Drama: 1,141 movies</li>
+              <li>😄 Comedy: 1,129 movies</li>
+              <li>💕 Romance: 965 movies</li>
+              <li>🔪 Thriller: 705 movies</li>
+              <li>💥 Action: 383 movies</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">
+            <i class="fas fa-calendar-alt"></i> Movies by Decade
+          </h2>
+          <div class="coming-soon">
+            <p>
+              Decade analysis showing movie count, average ratings, and total
+              runtime from 1910s to 2020s. The 2000s decade leads with 609
+              movies watched!
+            </p>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">
+            <i class="fas fa-user-tie"></i> Most Watched Directors
+          </h2>
+          <div class="coming-soon">
+            <p>
+              Analysis of the most-watched directors, their filmographies,
+              average ratings, and genre preferences. Data enrichment in
+              progress!
+            </p>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">
+            <i class="fas fa-brain"></i> ML-Powered Recommendations
+          </h2>
+          <div class="coming-soon">
+            <h2>🤖 Machine Learning Coming Soon!</h2>
+            <p>
+              Get personalized movie recommendations using collaborative
+              filtering, content-based analysis, and hybrid recommendation
+              systems trained on your viewing history.
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem">
+          <a href="../index.html#cinema" class="back-button">
+            <i class="fas fa-arrow-left"></i> Return to Main Site
+          </a>
+        </div>
+      </div>
     </div>
-    
+
     <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <p>&copy; 2025 Louise Ferreira. Cinema analytics powered by data science.</p>
-            </div>
+      <div class="container">
+        <div class="footer-content">
+          <p>
+            &copy; 2025 Louise Ferreira. Cinema analytics powered by data
+            science.
+          </p>
         </div>
+      </div>
     </footer>
-</body>
+  </body>
 </html>

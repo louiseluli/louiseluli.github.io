@@ -197,18 +197,19 @@ class PeopleDataEnricher:
                 logger.info(f"Processing person {idx + 1}/{len(people_ids)}")
 
             # IMDb base
-            imdb_row = imdb_people[imdb_people["nconst"] == person_id]
-            if imdb_row.empty:
-                continue
-            r0 = imdb_row.iloc[0]
-            person_info = {
-                "nconst": person_id,
-                "imdb_name": r0.get("primaryName"),
-                "birth_year_imdb": r0.get("birthYear"),
-                "death_year_imdb": r0.get("deathYear"),
-                "primary_profession": r0.get("primaryProfession"),
-                "known_for_titles": r0.get("knownForTitles"),
-            }
+            if isinstance(imdb_people, pd.DataFrame) and not imdb_people.empty:
+                imdb_row = imdb_people[imdb_people["nconst"] == person_id]
+                if not imdb_row.empty:
+                    r0 = imdb_row.iloc[0]
+                    person_info = {
+                        "nconst": person_id,
+                        "imdb_name": r0.get("primaryName"),
+                        "birth_year_imdb": r0.get("birthYear"),
+                        "death_year_imdb": r0.get("deathYear"),
+                        "primary_profession": r0.get("primaryProfession"),
+                        "known_for_titles": r0.get("knownForTitles"),
+                    }
+
 
             # TMDB
             tmdb_data = self.get_tmdb_person_details(person_id)
@@ -257,16 +258,28 @@ def parse_args():
                    help="Number of people to enrich (use -1 for ALL). Default: -1")
     p.add_argument("--out", default="data/enriched_people.csv",
                    help="Output CSV (default: data/enriched_people.csv)")
+    p.add_argument(
+        "--providers",
+        type=str,
+        default="imdb,tmdb,wikidata",
+        help="Comma-separated providers to run: imdb, tmdb, wikidata (default: imdb,tmdb,wikidata)"
+    )
     return p.parse_args()
+
 
 def main():
     args = parse_args()
 
     TMDB_API_KEY = os.getenv("TMDB_API_KEY", "YOUR_TMDB_API_KEY")
     enricher = PeopleDataEnricher(TMDB_API_KEY)
+    
+    providers = [p.strip().lower() for p in (args.providers or "").split(",") if p.strip()]
+
 
     # IMDb names
-    imdb_people = enricher.load_imdb_people()
+    imdb_people = None
+    if "imdb" in providers:
+        imdb_people = enricher.load_imdb_people()
 
     # Watchlist (robust path)
     watchlist_path = resolve_watchlist(args.watchlist)

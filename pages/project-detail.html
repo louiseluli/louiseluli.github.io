@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Details | Louise Ferreira</title>
+    <link rel="stylesheet" href="../css/style-enhanced.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .detail-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding-top: 80px;
+        padding-bottom: 4rem;
+      }
+
+      .detail-header {
+        background: rgba(139, 92, 246, 0.1);
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        padding: 3rem 0;
+        margin-bottom: 3rem;
+      }
+
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #8b5cf6;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+      }
+
+      .back-button:hover {
+        color: #a78bfa;
+        transform: translateX(-5px);
+      }
+
+      .project-info {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .project-icon-large {
+        width: 80px;
+        height: 80px;
+        background: rgba(139, 92, 246, 0.2);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #8b5cf6;
+      }
+
+      .project-details h1 {
+        font-size: 2.5rem;
+        color: #f1f5f9;
+        margin-bottom: 1rem;
+      }
+
+      .project-tagline {
+        color: #94a3b8;
+        font-size: 1.1rem;
+        line-height: 1.6;
+      }
+
+      .detail-content {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 20px;
+        padding: 3rem;
+        margin-bottom: 2rem;
+      }
+
+      .section-title-detail {
+        font-size: 1.8rem;
+        color: #f1f5f9;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .section-title-detail i {
+        color: #8b5cf6;
+      }
+
+      .description-text {
+        color: #cbd5e1;
+        line-height: 1.8;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+      }
+
+      .feature-card {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover {
+        background: rgba(139, 92, 246, 0.15);
+        transform: translateY(-5px);
+      }
+
+      .feature-card h4 {
+        color: #8b5cf6;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .feature-card p {
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+
+      .tech-stack-detail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .tech-badge-detail {
+        background: rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+        padding: 0.7rem 1.5rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .tech-badge-detail:hover {
+        background: rgba(139, 92, 246, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .challenges-section {
+        background: rgba(236, 72, 153, 0.1);
+        border: 1px solid rgba(236, 72, 153, 0.3);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem 0;
+      }
+
+      .challenges-section h3 {
+        color: #ec4899;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .challenge-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(236, 72, 153, 0.2);
+      }
+
+      .challenge-item:last-child {
+        border-bottom: none;
+      }
+
+      .challenge-item strong {
+        color: #ec4899;
+      }
+
+      .challenge-item p {
+        color: #cbd5e1;
+        line-height: 1.6;
+        margin-top: 0.5rem;
+      }
+
+      .outcomes-section {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem 0;
+      }
+
+      .outcomes-section h3 {
+        color: #10b981;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .outcomes-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .outcomes-list li {
+        padding: 0.75rem 0;
+        color: #cbd5e1;
+        display: flex;
+        align-items: start;
+        gap: 1rem;
+      }
+
+      .outcomes-list i {
+        color: #10b981;
+        margin-top: 0.3rem;
+        flex-shrink: 0;
+      }
+
+      .project-links {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+      }
+
+      .project-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: rgba(139, 92, 246, 0.2);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 10px;
+        color: #a78bfa;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .project-link-btn:hover {
+        background: rgba(139, 92, 246, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .project-link-btn.primary {
+        background: #8b5cf6;
+        color: #fff;
+        border-color: #8b5cf6;
+      }
+
+      .project-link-btn.primary:hover {
+        background: #7c3aed;
+      }
+
+      .methodology-section {
+        margin: 2rem 0;
+      }
+
+      .methodology-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .step-card {
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 15px;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .step-number {
+        width: 40px;
+        height: 40px;
+        background: rgba(139, 92, 246, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #8b5cf6;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .step-content h4 {
+        color: #f1f5f9;
+        margin-bottom: 0.5rem;
+      }
+
+      .step-content p {
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 768px) {
+        .project-info {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        .project-details h1 {
+          font-size: 1.8rem;
+        }
+
+        .detail-content {
+          padding: 2rem 1.5rem;
+        }
+
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .project-links {
+          flex-direction: column;
+        }
+
+        .project-link-btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="animated-background">
+      <div class="gradient-orb orb-1"></div>
+      <div class="gradient-orb orb-2"></div>
+      <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="detail-page">
+      <div class="container">
+        <a href="../index-enhanced.html#projects" class="back-button">
+          <i class="fas fa-arrow-left"></i> Back to Portfolio
+        </a>
+
+        <div class="detail-header">
+          <div id="project-header"></div>
+        </div>
+
+        <div id="project-content"></div>
+      </div>
+    </div>
+
+    <script>
+      // Project data
+      const projects = {
+        fairness: {
+          title: "Fairness & Governance Framework",
+          icon: "fa-balance-scale-right",
+          tagline:
+            "Building ethical AI systems that protect marginalized communities from algorithmic harm",
+          description:
+            "This project represents the culmination of my MSc dissertation research, focusing on developing a comprehensive framework for detecting and mitigating bias in machine learning systems. The framework combines multiple fairness metrics, mitigation strategies, and explainability tools to create a reusable solution for ethical AI governance.",
+          features: [
+            {
+              icon: "fa-chart-bar",
+              title: "Comprehensive Bias Detection",
+              text: "Implements multiple fairness metrics including demographic parity, equalized odds, and disparate impact to identify bias across different dimensions",
+            },
+            {
+              icon: "fa-wrench",
+              title: "Mitigation Strategies",
+              text: "Integrates pre-processing, in-processing, and post-processing techniques using Fairlearn and AIF360 to reduce bias while maintaining model performance",
+            },
+            {
+              icon: "fa-eye",
+              title: "Explainability with SHAP",
+              text: "Provides interpretable explanations of model decisions and bias sources using SHAP values, enabling transparent AI governance",
+            },
+            {
+              icon: "fa-code-branch",
+              title: "Modular Architecture",
+              text: "Designed as a reusable framework that can be integrated into existing ML pipelines, with clear documentation and best practices",
+            },
+          ],
+          techStack: [
+            "Python",
+            "Fairlearn",
+            "AIF360",
+            "SHAP",
+            "scikit-learn",
+            "pandas",
+            "matplotlib",
+            "seaborn",
+          ],
+          challenges: [
+            {
+              title: "Intersectional Bias",
+              solution:
+                "Developed methods to analyze bias across multiple protected attributes simultaneously (e.g., race and gender), addressing the complexity of intersectional discrimination that traditional fairness metrics often miss.",
+            },
+            {
+              title: "Performance-Fairness Trade-offs",
+              solution:
+                "Implemented a systematic approach to balance model accuracy with fairness constraints, providing decision-makers with clear trade-off analyses and optimization strategies.",
+            },
+            {
+              title: "Real-World Data Challenges",
+              solution:
+                "Analyzed nearly 700,000 adult content videos to uncover discrimination patterns, dealing with imbalanced datasets, missing data, and the ethical implications of working with sensitive content.",
+            },
+          ],
+          outcomes: [
+            "Created a reusable Python framework that can be applied to various classification problems",
+            "Demonstrated measurable improvements in fairness metrics without significant accuracy loss",
+            "Provided actionable insights for organizations seeking to implement ethical AI practices",
+            "Contributed to the growing body of research on algorithmic justice and fairness-aware machine learning",
+            "Developed comprehensive documentation and tutorials for practitioners",
+          ],
+          methodology: [
+            {
+              title: "Data Collection & Analysis",
+              description:
+                "Gathered and analyzed a large-scale dataset of 700K+ videos, performing exploratory data analysis to identify potential bias patterns and data quality issues.",
+            },
+            {
+              title: "Fairness Metric Selection",
+              description:
+                "Evaluated multiple fairness definitions (group fairness, individual fairness, calibration) and selected appropriate metrics based on the use case and stakeholder values.",
+            },
+            {
+              title: "Baseline Model Development",
+              description:
+                "Built high-performing classification models using transformer architectures (BERT, RoBERTa) to establish baseline performance before applying fairness interventions.",
+            },
+            {
+              title: "Bias Mitigation Implementation",
+              description:
+                "Applied various mitigation techniques at different stages of the ML pipeline, comparing their effectiveness and computational costs.",
+            },
+            {
+              title: "Evaluation & Iteration",
+              description:
+                "Conducted rigorous evaluation using multiple metrics, iterating on the approach based on results and stakeholder feedback.",
+            },
+          ],
+          links: {
+            github: "#",
+            documentation: "#",
+            paper: "#",
+          },
+        },
+        cinema: {
+          title: "Cinema Analysis Data Product",
+          icon: "fa-film",
+          tagline:
+            "A comprehensive data product analyzing 140K+ movies from over a century of cinema",
+          description:
+            "This project is a full-stack data product that transforms raw IMDb data into actionable insights through a custom ETL pipeline and interactive Streamlit application. It demonstrates end-to-end data engineering skills, from database design to user interface implementation.",
+          features: [
+            {
+              icon: "fa-database",
+              title: "Robust ETL Pipeline",
+              text: "Custom Python pipeline that ingests, cleans, and normalizes data from multiple IMDb datasets, handling millions of records efficiently",
+            },
+            {
+              icon: "fa-table",
+              title: "Normalized Database Schema",
+              text: "Designed and implemented a normalized SQLite database with proper indexing, foreign keys, and query optimization for fast retrieval",
+            },
+            {
+              icon: "fa-chart-line",
+              title: "Interactive Streamlit UI",
+              text: "800+ lines of production-ready code providing data visualization, filtering, and exploration capabilities with an intuitive interface",
+            },
+            {
+              icon: "fa-search",
+              title: "Advanced Analytics",
+              text: "Statistical analysis of viewing patterns, genre trends, rating distributions, and temporal analysis across decades of cinema history",
+            },
+          ],
+          techStack: [
+            "Python",
+            "Streamlit",
+            "SQLite",
+            "pandas",
+            "matplotlib",
+            "seaborn",
+            "SQL",
+            "ETL",
+          ],
+          challenges: [
+            {
+              title: "Data Volume & Performance",
+              solution:
+                "Optimized database queries with proper indexing and implemented data pagination, caching strategies, and incremental loading to handle 140K+ titles efficiently.",
+            },
+            {
+              title: "Data Quality Issues",
+              solution:
+                "Built comprehensive data validation and cleaning routines to handle missing values, inconsistent formats, and duplicate entries across multiple IMDb datasets.",
+            },
+            {
+              title: "User Experience Design",
+              solution:
+                "Implemented responsive layout, intuitive filtering options, and interactive visualizations that work seamlessly across different screen sizes and devices.",
+            },
+          ],
+          outcomes: [
+            "Successfully processed and analyzed 140,000+ movie titles spanning 112 years",
+            "Built a production-ready application with clean, maintainable code architecture",
+            "Created insights into viewing patterns across 23 genres and 95+ countries",
+            "Demonstrated full-stack data engineering capabilities from ETL to UI",
+            "Achieved fast query performance (<100ms) through database optimization",
+          ],
+          methodology: [
+            {
+              title: "Data Architecture Planning",
+              description:
+                "Designed the database schema, identified required tables, relationships, and indexes for optimal performance.",
+            },
+            {
+              title: "ETL Pipeline Development",
+              description:
+                "Built modular Python scripts to extract data from compressed TSV files, transform it through cleaning and normalization, and load it into SQLite.",
+            },
+            {
+              title: "Database Implementation",
+              description:
+                "Created normalized tables with proper constraints, indexes, and foreign keys to ensure data integrity and query efficiency.",
+            },
+            {
+              title: "UI Development",
+              description:
+                "Developed the Streamlit application with multiple views, filters, and visualizations, focusing on user experience and performance.",
+            },
+            {
+              title: "Testing & Optimization",
+              description:
+                "Conducted performance profiling, query optimization, and user testing to ensure the application meets production standards.",
+            },
+          ],
+          links: {
+            demo: "cinema.html",
+            github: "#",
+          },
+        },
+        rag: {
+          title: "Internal RAG Assistant",
+          icon: "fa-robot",
+          tagline:
+            "Production-grade AI chatbot for enterprise knowledge management",
+          description:
+            "Led the design and implementation of production-level chatbots for document retrieval at CloudWalk and the Inter-American Development Bank. This project showcases enterprise-grade AI system architecture, combining cutting-edge LLM technology with traditional search methods for accurate and efficient knowledge retrieval.",
+          features: [
+            {
+              icon: "fa-brain",
+              title: "Hybrid Retrieval System",
+              text: "Combines semantic search using HuggingFace embeddings and FAISS with keyword-based BM25 retrieval for comprehensive document coverage",
+            },
+            {
+              icon: "fa-server",
+              title: "Multi-Language Backend",
+              text: "Architected both Python/Flask and C#/.NET backends, demonstrating versatility in enterprise technology stacks",
+            },
+            {
+              icon: "fa-robot",
+              title: "Advanced LLM Integration",
+              text: "Leverages Azure OpenAI GPT-4o for semantic understanding, with intelligent metadata extraction and answer generation",
+            },
+            {
+              icon: "fa-shield-alt",
+              title: "Enterprise-Grade Features",
+              text: "Includes confidence scoring, explainable AI, versioned caching, and comprehensive monitoring for production reliability",
+            },
+          ],
+          techStack: [
+            "Python",
+            "Flask",
+            "C#",
+            ".NET",
+            "RAG",
+            "Azure OpenAI",
+            "GPT-4o",
+            "HuggingFace",
+            "FAISS",
+            "BM25",
+            "LangChain",
+            "SQL",
+            "Gradio",
+          ],
+          challenges: [
+            {
+              title: "Multi-System Integration",
+              solution:
+                "Successfully bridged Python AI pipeline with C# microservices backend, implementing proper API contracts, data serialization, and error handling across language boundaries.",
+            },
+            {
+              title: "Cost Optimization",
+              solution:
+                "Implemented versioned JSON metadata cache to reduce redundant LLM calls, achieving 60% cost reduction while maintaining answer quality.",
+            },
+            {
+              title: "Answer Quality & Reliability",
+              solution:
+                "Developed confidence scoring system and explainability features (answer completeness, document relevance) to help users evaluate answer trustworthiness.",
+            },
+          ],
+          outcomes: [
+            "Successfully deployed production chatbots at two major institutions",
+            "Indexed 10,000+ documents with 95% answer accuracy",
+            "Achieved 60% cost reduction through intelligent caching",
+            "Received positive feedback from end users and stakeholders",
+            "Established ML pipeline best practices for the team",
+          ],
+          methodology: [
+            {
+              title: "Requirements Gathering",
+              description:
+                "Collaborated with stakeholders to understand use cases, user needs, and technical constraints of the existing infrastructure.",
+            },
+            {
+              title: "Architecture Design",
+              description:
+                "Designed system architecture covering document ingestion, embedding generation, vector storage, retrieval, and answer generation.",
+            },
+            {
+              title: "Backend Development",
+              description:
+                "Implemented both Python and C# backends with RESTful APIs, proper error handling, and comprehensive logging.",
+            },
+            {
+              title: "RAG Pipeline Implementation",
+              description:
+                "Built the retrieval-augmented generation pipeline using LangChain, integrating multiple retrieval methods and LLM calls.",
+            },
+            {
+              title: "UI Development & Testing",
+              description:
+                "Created user-friendly Gradio interface and conducted extensive testing with real users to refine the experience.",
+            },
+          ],
+          links: {
+            documentation: "#",
+          },
+        },
+        ir: {
+          title: "Information Retrieval System",
+          icon: "fa-search",
+          tagline:
+            "Gold-standard evaluation framework for search algorithm optimization",
+          description:
+            "Developed a comprehensive information retrieval system with automated evaluation capabilities. This project demonstrates deep understanding of IR fundamentals, evaluation methodologies, and the ability to build systems that can measure and improve search quality.",
+          features: [
+            {
+              icon: "fa-list-check",
+              title: "Gold Standard Test Set",
+              text: "Created 20 complex queries with manually curated relevance judgments, representing diverse information needs and query types",
+            },
+            {
+              icon: "fa-calculator",
+              title: "Automated Metrics",
+              text: "Implemented precision, recall, F1-score, MAP, and NDCG calculations to comprehensively evaluate retrieval performance",
+            },
+            {
+              icon: "fa-flask",
+              title: "Algorithm Comparison",
+              text: "Systematic comparison of multiple retrieval algorithms (BM25, TF-IDF, embeddings) with statistical significance testing",
+            },
+            {
+              icon: "fa-chart-bar",
+              title: "Performance Visualization",
+              text: "Interactive visualizations showing per-query performance, algorithm comparisons, and trade-off analyses",
+            },
+          ],
+          techStack: [
+            "Python",
+            "Information Retrieval",
+            "BM25",
+            "TF-IDF",
+            "Embeddings",
+            "Evaluation Metrics",
+            "pandas",
+            "matplotlib",
+          ],
+          challenges: [
+            {
+              title: "Query Complexity",
+              solution:
+                "Designed queries spanning different difficulty levels and information needs (factual, exploratory, multi-faceted) to thoroughly test retrieval capabilities.",
+            },
+            {
+              title: "Relevance Assessment",
+              solution:
+                "Developed clear relevance criteria and assessment guidelines to ensure consistent and reliable judgments across the test set.",
+            },
+            {
+              title: "Statistical Rigor",
+              solution:
+                "Implemented proper statistical tests to determine if observed performance differences between algorithms are significant or due to chance.",
+            },
+          ],
+          outcomes: [
+            "Created reusable evaluation framework for IR system development",
+            "Identified optimal retrieval algorithms for different query types",
+            "Achieved measurable improvements in search quality through systematic testing",
+            "Documented best practices for IR evaluation",
+            "Built foundation for future advanced retrieval research",
+          ],
+          methodology: [
+            {
+              title: "Corpus Selection",
+              description:
+                "Selected appropriate document collection representing real-world information retrieval scenarios and user needs.",
+            },
+            {
+              title: "Query Design",
+              description:
+                "Crafted 20 diverse queries covering different complexities, domains, and information needs based on user research.",
+            },
+            {
+              title: "Relevance Judgments",
+              description:
+                "Manually assessed document relevance for each query using graded relevance scales (irrelevant, partially relevant, highly relevant).",
+            },
+            {
+              title: "Algorithm Implementation",
+              description:
+                "Implemented multiple retrieval algorithms with consistent interfaces for fair comparison and evaluation.",
+            },
+            {
+              title: "Evaluation & Analysis",
+              description:
+                "Calculated comprehensive metrics, performed statistical analysis, and generated visualizations to communicate findings.",
+            },
+          ],
+          links: {
+            github: "#",
+          },
+        },
+      };
+
+      // Get project ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get("id") || "fairness";
+      const project = projects[projectId];
+
+      if (project) {
+        // Render header
+        document.getElementById("project-header").innerHTML = `
+          <div class="project-info">
+            <div class="project-icon-large">
+              <i class="fas ${project.icon}"></i>
+            </div>
+            <div class="project-details">
+              <h1>${project.title}</h1>
+              <p class="project-tagline">${project.tagline}</p>
+            </div>
+          </div>
+        `;
+
+        // Render content
+        let contentHtml = `
+          <div class="detail-content">
+            <h3 class="section-title-detail">
+              <i class="fas fa-info-circle"></i>
+              Project Overview
+            </h3>
+            <p class="description-text">${project.description}</p>
+
+            <h3 class="section-title-detail">
+              <i class="fas fa-star"></i>
+              Key Features
+            </h3>
+            <div class="features-grid">
+              ${project.features
+                .map(
+                  feature => `
+                <div class="feature-card">
+                  <h4><i class="fas ${feature.icon}"></i> ${feature.title}</h4>
+                  <p>${feature.text}</p>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+
+            <div class="challenges-section">
+              <h3><i class="fas fa-exclamation-triangle"></i> Challenges & Solutions</h3>
+              ${project.challenges
+                .map(
+                  challenge => `
+                <div class="challenge-item">
+                  <strong>${challenge.title}:</strong>
+                  <p>${challenge.solution}</p>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+
+            <div class="methodology-section">
+              <h3 class="section-title-detail">
+                <i class="fas fa-cogs"></i>
+                Methodology
+              </h3>
+              <div class="methodology-steps">
+                ${project.methodology
+                  .map(
+                    (step, index) => `
+                  <div class="step-card">
+                    <div class="step-number">${index + 1}</div>
+                    <div class="step-content">
+                      <h4>${step.title}</h4>
+                      <p>${step.description}</p>
+                    </div>
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            </div>
+
+            <div class="outcomes-section">
+              <h3><i class="fas fa-trophy"></i> Outcomes & Impact</h3>
+              <ul class="outcomes-list">
+                ${project.outcomes
+                  .map(
+                    outcome => `
+                  <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>${outcome}</span>
+                  </li>
+                `
+                  )
+                  .join("")}
+              </ul>
+            </div>
+
+            <h3 class="section-title-detail">
+              <i class="fas fa-code"></i>
+              Technologies Used
+            </h3>
+            <div class="tech-stack-detail">
+              ${project.techStack
+                .map(
+                  tech => `
+                <span class="tech-badge-detail">${tech}</span>
+              `
+                )
+                .join("")}
+            </div>
+
+            <div class="project-links">
+              ${
+                project.links.demo
+                  ? `<a href="${project.links.demo}" class="project-link-btn primary">
+                  <i class="fas fa-play"></i> View Demo
+                </a>`
+                  : ""
+              }
+              ${
+                project.links.github
+                  ? `<a href="${project.links.github}" class="project-link-btn">
+                  <i class="fab fa-github"></i> View Code
+                </a>`
+                  : ""
+              }
+              ${
+                project.links.documentation
+                  ? `<a href="${project.links.documentation}" class="project-link-btn">
+                  <i class="fas fa-book"></i> Documentation
+                </a>`
+                  : ""
+              }
+              ${
+                project.links.paper
+                  ? `<a href="${project.links.paper}" class="project-link-btn">
+                  <i class="fas fa-file-alt"></i> Research Paper
+                </a>`
+                  : ""
+              }
+            </div>
+          </div>
+        `;
+
+        document.getElementById("project-content").innerHTML = contentHtml;
+      } else {
+        document.getElementById("project-content").innerHTML = `
+          <div class="detail-content">
+            <h3>Project not found</h3>
+            <p>Please return to the portfolio and select a valid project.</p>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+</html>

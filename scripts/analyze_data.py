@@ -34,115 +34,205 @@ def resolve_watchlist(cli_arg: Optional[str] = None) -> Path:
     raise FileNotFoundError("Could not find Watched.csv. I looked in:" + tried)
 
 def load_data(filepath: Optional[str] = None) -> pd.DataFrame:
-    fp = resolve_watchlist(filepath)
+    """
+    Prefer enriched CSV if present; otherwise fall back to the watchlist.
+    """
+    enriched = Path("data/Watched_enriched.csv")
+    if filepath:
+        fp = Path(filepath).expanduser().resolve()
+    elif enriched.exists():
+        fp = enriched
+    else:
+        fp = resolve_watchlist(None)
+
     df = pd.read_csv(fp, encoding="utf-8-sig")
     print(f"Loaded {len(df)} movies from {fp}")
     return df
 
+
+# ---------- NEW: schema-compat helpers ----------
+
+def pick_col(df: pd.DataFrame, *candidates, default=None):
+    """
+    Return the first existing column among candidates; otherwise default (Series of NaNs if default is None).
+    """
+    for c in candidates:
+        if c in df.columns:
+            return df[c]
+    if default is None:
+        return pd.Series([pd.NA] * len(df))
+    return default
+
+def to_num(s: pd.Series, allow_int=True):
+    """
+    Safely coerce a series (possibly strings) to numeric.
+    """
+    x = pd.to_numeric(s, errors="coerce")
+    return x
+
+def to_date(s: pd.Series):
+    return pd.to_datetime(s, errors="coerce")
+
+
 def basic_stats(df):
-    """Calculate basic statistics"""
+    """Calculate basic statistics (compatible with raw and enriched schemas)"""
+    title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
+    runtime = to_num(pick_col(df, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
+    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
+    year = to_num(pick_col(df, 'Year', 'startYear'))
+
+    earliest = int(year.min()) if year.notna().any() else None
+    latest = int(year.max()) if year.notna().any() else None
+    span = int(latest - earliest) if earliest is not None and latest is not None else None
+
     stats = {
-        'total_movies': len(df),
-        'unique_movies': df['Title'].nunique(),
-        'total_runtime_mins': df['Runtime (mins)'].sum(),
-        'total_runtime_hours': round(df['Runtime (mins)'].sum() / 60, 2),
-        'total_runtime_days': round(df['Runtime (mins)'].sum() / (60 * 24), 2),
-        'avg_rating': round(df['IMDb Rating'].mean(), 2),
-        'median_rating': df['IMDb Rating'].median(),
-        'avg_runtime': round(df['Runtime (mins)'].mean(), 2),
+        'total_movies': int(len(df)),
+        'unique_movies': int(title.nunique(dropna=True)),
+        'total_runtime_mins': float(runtime.sum()),
+        'total_runtime_hours': round(float(runtime.sum()) / 60, 2),
+        'total_runtime_days': round(float(runtime.sum()) / (60 * 24), 2),
+        'avg_rating': round(float(rating.mean()), 2) if rating.notna().any() else None,
+        'median_rating': float(rating.median()) if rating.notna().any() else None,
+        'avg_runtime': round(float(runtime.mean()), 2) if len(runtime) else None,
         'year_range': {
-            'earliest': int(df['Year'].min()),
-            'latest': int(df['Year'].max()),
-            'span': int(df['Year'].max() - df['Year'].min())
+            'earliest': earliest,
+            'latest': latest,
+            'span': span
         }
     }
     return stats
 
+
 def genre_analysis(df):
-    """Analyze genre distribution"""
-    # Split genres and count
+    """Analyze genre distribution (supports Genres, genres, genres_merged)"""
+    gcol = pick_col(df, 'genres_merged', 'Genres', 'genres')
     all_genres = []
-    for genres in df['Genres'].dropna():
-        all_genres.extend([g.strip() for g in genres.split(',')])
-    
+    for genres in gcol.dropna().astype(str):
+        # support comma or pipe separators
+        parts = []
+        for sep in [',', '|']:
+            if sep in genres:
+                parts = [p.strip() for p in genres.split(sep)]
+                break
+        if not parts:
+            parts = [genres.strip()]
+        all_genres.extend([p for p in parts if p])
+
     genre_counts = Counter(all_genres)
-    
     return {
-        'total_unique_genres': len(genre_counts),
+        'total_unique_genres': int(len(genre_counts)),
         'top_10_genres': dict(genre_counts.most_common(10)),
         'genre_distribution': dict(genre_counts)
     }
 
+
 def decade_analysis(df):
-    """Analyze movies by decade"""
-    df['Decade'] = (df['Year'] // 10) * 10
-    decade_counts = df['Decade'].value_counts().sort_index()
-    
+    """Analyze movies by decade (works with Year/startYear)"""
+    year = to_num(pick_col(df, 'Year', 'startYear'))
+    decade = ((year // 10) * 10).dropna().astype(int)
+    tmp = df.copy()
+    tmp['Decade'] = decade
+    decade_counts = tmp['Decade'].value_counts().sort_index()
+
     decade_stats = {}
-    for decade in decade_counts.index:
-        decade_movies = df[df['Decade'] == decade]
-        decade_stats[int(decade)] = {
-            'count': int(decade_counts[decade]),
-            'avg_rating': round(decade_movies['IMDb Rating'].mean(), 2),
-            'total_runtime_hours': round(decade_movies['Runtime (mins)'].sum() / 60, 2)
+    rating = to_num(pick_col(tmp, 'IMDb Rating', 'averageRating'))
+    runtime = to_num(pick_col(tmp, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
+
+    for d in decade_counts.index:
+        mask = tmp['Decade'] == d
+        decade_stats[int(d)] = {
+            'count': int(mask.sum()),
+            'avg_rating': round(float(rating[mask].mean()), 2) if rating[mask].notna().any() else None,
+            'total_runtime_hours': round(float(runtime[mask].sum()) / 60, 2),
         }
-    
     return decade_stats
 
+
 def director_analysis(df):
-    """Analyze most-watched directors"""
-    # Split directors
+    """Analyze most-watched directors (only if name column exists)"""
+    if 'Directors' not in df.columns:
+        return {}  # IMDb crew 'directors' are nconsts; we skip that case.
+
     all_directors = []
-    for directors in df['Directors'].dropna():
-        all_directors.extend([d.strip() for d in directors.split(',')])
-    
+    for directors in df['Directors'].dropna().astype(str):
+        all_directors.extend([d.strip() for d in directors.split(',') if d.strip()])
+
     director_counts = Counter(all_directors)
-    
-    # Get detailed stats for top directors
+
+    # detailed stats for top directors
+    title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
+    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
+    runtime = to_num(pick_col(df, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
+
     top_directors = {}
     for director, count in director_counts.most_common(15):
         director_movies = df[df['Directors'].str.contains(director, na=False)]
         top_directors[director] = {
-            'movie_count': count,
-            'avg_rating': round(director_movies['IMDb Rating'].mean(), 2),
-            'total_runtime_hours': round(director_movies['Runtime (mins)'].sum() / 60, 2),
-            'movies': director_movies['Title'].tolist()
+            'movie_count': int(count),
+            'avg_rating': round(float(rating.loc[director_movies.index].mean()), 2) if rating.loc[director_movies.index].notna().any() else None,
+            'total_runtime_hours': round(float(runtime.loc[director_movies.index].sum()) / 60, 2),
+            'movies': title.loc[director_movies.index].dropna().astype(str).tolist(),
         }
-    
     return top_directors
 
+
 def rating_distribution(df):
-    """Analyze rating distribution"""
-    rating_bins = pd.cut(df['IMDb Rating'], bins=[0, 5, 6, 7, 8, 9, 10], 
-                        labels=['0-5', '5-6', '6-7', '7-8', '8-9', '9-10'])
-    
+    """Analyze rating distribution (works with IMDb Rating or averageRating)"""
+    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
+    title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
+    year = to_num(pick_col(df, 'Year', 'startYear'))
+
+    rating_bins = pd.cut(rating, bins=[0, 5, 6, 7, 8, 9, 10],
+                         labels=['0-5', '5-6', '6-7', '7-8', '8-9', '9-10'])
     distribution = rating_bins.value_counts().sort_index()
-    
+
+    highest_title = None
+    highest_rating = None
+    highest_year = None
+    if rating.notna().any():
+        idx = rating.idxmax()
+        highest_title = str(title.loc[idx]) if pd.notna(title.loc[idx]) else None
+        highest_rating = float(rating.max())
+        highest_year = int(year.loc[idx]) if pd.notna(year.loc[idx]) else None
+
+    above_8 = rating[rating >= 8.0]
     return {
-        'distribution': dict(distribution),
+        'distribution': {str(k): int(v) for k, v in distribution.items()},
         'highest_rated': {
-            'title': df.loc[df['IMDb Rating'].idxmax(), 'Title'],
-            'rating': df['IMDb Rating'].max(),
-            'year': int(df.loc[df['IMDb Rating'].idxmax(), 'Year'])
+            'title': highest_title,
+            'rating': highest_rating,
+            'year': highest_year
         },
-        'movies_above_8': len(df[df['IMDb Rating'] >= 8.0]),
-        'percentage_above_8': round(len(df[df['IMDb Rating'] >= 8.0]) / len(df) * 100, 2)
+        'movies_above_8': int(above_8.notna().sum()),
+        'percentage_above_8': round(float(above_8.notna().sum()) / len(df) * 100, 2) if len(df) else 0.0
     }
 
+
 def yearly_watching_pattern(df):
-    """Analyze watching patterns over years"""
-    df['Created_Year'] = pd.to_datetime(df['Created']).dt.year
-    
-    yearly_counts = df['Created_Year'].value_counts().sort_index()
-    
+    """Analyze watching patterns over years using Created/Date Rated/Modified/Release Date"""
+    created = to_date(pick_col(df, 'Created'))
+    if created.isna().all():
+        created = to_date(pick_col(df, 'Date Rated'))
+    if created.isna().all():
+        created = to_date(pick_col(df, 'Modified'))
+    if created.isna().all():
+        created = to_date(pick_col(df, 'Release Date'))
+
+    if created.isna().all():
+        return {'movies_per_year': {}, 'most_active_year': {'year': None, 'count': 0}, 'total_years_tracked': 0}
+
+    years = created.dt.year.dropna().astype(int)
+    yearly_counts = years.value_counts().sort_index()
+
+    most_year = int(yearly_counts.idxmax()) if not yearly_counts.empty else None
+    most_count = int(yearly_counts.max()) if not yearly_counts.empty else 0
+
     return {
-        'movies_per_year': dict(yearly_counts),
-        'most_active_year': {
-            'year': int(yearly_counts.idxmax()),
-            'count': int(yearly_counts.max())
-        },
-        'total_years_tracked': len(yearly_counts)
+        'movies_per_year': {int(k): int(v) for k, v in yearly_counts.items()},
+        'most_active_year': {'year': most_year, 'count': most_count},
+        'total_years_tracked': int(len(yearly_counts))
     }
+
 
 def generate_insights(df):
     """Generate comprehensive insights"""

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Experience Details | Louise Ferreira</title>
+    <link rel="stylesheet" href="../css/style-enhanced.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .detail-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding-top: 80px;
+      }
+
+      .detail-header {
+        background: rgba(139, 92, 246, 0.1);
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        padding: 3rem 0;
+        margin-bottom: 3rem;
+      }
+
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #8b5cf6;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+      }
+
+      .back-button:hover {
+        color: #a78bfa;
+        transform: translateX(-5px);
+      }
+
+      .company-info {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .company-logo-large {
+        width: 80px;
+        height: 80px;
+        background: rgba(139, 92, 246, 0.2);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #8b5cf6;
+      }
+
+      .company-details h1 {
+        font-size: 2.5rem;
+        color: #f1f5f9;
+        margin-bottom: 0.5rem;
+      }
+
+      .company-details h2 {
+        font-size: 1.5rem;
+        color: #8b5cf6;
+        font-weight: 500;
+        margin-bottom: 1rem;
+      }
+
+      .job-meta-detail {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        color: #94a3b8;
+        font-size: 0.95rem;
+      }
+
+      .job-meta-detail span {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .job-meta-detail i {
+        color: #8b5cf6;
+      }
+
+      .detail-content {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 20px;
+        padding: 3rem;
+        margin-bottom: 2rem;
+      }
+
+      .section-title-detail {
+        font-size: 1.8rem;
+        color: #f1f5f9;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .section-title-detail i {
+        color: #8b5cf6;
+      }
+
+      .description-text {
+        color: #cbd5e1;
+        line-height: 1.8;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .responsibilities-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .responsibilities-list li {
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        color: #cbd5e1;
+        display: flex;
+        align-items: start;
+        gap: 1rem;
+      }
+
+      .responsibilities-list li:last-child {
+        border-bottom: none;
+      }
+
+      .responsibilities-list i {
+        color: #10b981;
+        margin-top: 0.3rem;
+        flex-shrink: 0;
+      }
+
+      .tech-stack-detail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .tech-badge-detail {
+        background: rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+        padding: 0.7rem 1.5rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .tech-badge-detail:hover {
+        background: rgba(139, 92, 246, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .impact-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+
+      .metric-card {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+      }
+
+      .metric-value {
+        font-size: 2rem;
+        color: #8b5cf6;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .metric-label {
+        color: #94a3b8;
+        font-size: 0.9rem;
+      }
+
+      .context-section {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-top: 2rem;
+      }
+
+      .context-section h3 {
+        color: #10b981;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .context-section p {
+        color: #cbd5e1;
+        line-height: 1.8;
+      }
+
+      @media (max-width: 768px) {
+        .company-info {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        .company-details h1 {
+          font-size: 1.8rem;
+        }
+
+        .company-details h2 {
+          font-size: 1.2rem;
+        }
+
+        .detail-content {
+          padding: 2rem 1.5rem;
+        }
+
+        .job-meta-detail {
+          flex-direction: column;
+          gap: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="animated-background">
+      <div class="gradient-orb orb-1"></div>
+      <div class="gradient-orb orb-2"></div>
+      <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <div class="detail-page">
+      <div class="container">
+        <a href="../index-enhanced.html#experience" class="back-button">
+          <i class="fas fa-arrow-left"></i> Back to Portfolio
+        </a>
+
+        <div class="detail-header">
+          <div id="experience-header"></div>
+        </div>
+
+        <div id="experience-content"></div>
+      </div>
+    </div>
+
+    <script>
+      // Experience data
+      const experiences = {
+        cloudwalk: {
+          company: "CloudWalk",
+          role: "Machine Learning Engineer",
+          icon: "fa-cloud",
+          location: "Remote",
+          period: "August 2025 - Present",
+          type: "Full-time",
+          description:
+            "Leading the design and delivery of production-ready AI systems for enterprise clients, focusing on NLP applications and business intelligence solutions. Building scalable ML infrastructure and REST APIs for real-time inference.",
+          responsibilities: [
+            "Design, build, and maintain scalable and reliable machine learning infrastructure for production deployment",
+            "Deploy and monitor machine learning models for real-time inference, ensuring high availability and performance",
+            "Develop and maintain robust REST APIs for the company's machine learning services",
+            "Lead design of AI-enabled MVPs from conception to deployment, including topic taggers and intent detection systems",
+            "Build topic taggers and intent detection systems for customer service automation using transformer-based models",
+            "Collaborate with data scientists to productionalize their models and algorithms, bridging research and production",
+            "Work with business stakeholders to translate requirements into ML solutions and deliver measurable value",
+            "Implement transformer-based models (BERT, RoBERTa) for Portuguese NLP applications",
+            "Establish ML pipeline best practices and comprehensive documentation standards for the team",
+          ],
+          techStack: [
+            "Python",
+            "PyTorch",
+            "HuggingFace",
+            "Azure",
+            "NLP",
+            "Transformers",
+            "REST APIs",
+            "BERT",
+            "RoBERTa",
+          ],
+          impact: [
+            { value: "5+", label: "AI Models Deployed" },
+            { value: "100%", label: "Uptime SLA" },
+            { value: "3x", label: "Inference Speed" },
+          ],
+          context:
+            "CloudWalk is a leading Brazilian fintech company specializing in AI-powered payment solutions and biometric authentication. As an ML Engineer, I'm responsible for designing and deploying cutting-edge NLP systems that power customer-facing products, working at the intersection of machine learning research and production engineering.",
+        },
+        idb: {
+          company: "Inter-American Development Bank",
+          role: "Intern - Data Consolidation & Process Optimization",
+          icon: "fa-university",
+          location: "Washington D.C., United States",
+          period: "June 2025 - August 2025",
+          type: "Internship",
+          description:
+            "Developed hybrid AI systems for internal knowledge management at Latin America's premier development institution, bridging Python and C# ecosystems to create production-ready chatbots for document retrieval.",
+          responsibilities: [
+            "Designed and developed an AI-powered chatbot for the Office of the Secretary, leveraging Python, C#, and SQL for end-to-end integration",
+            "Engineered an automated pipeline for PDF document ingestion using PyPDF2 and PyPDFLoader for scalable document processing",
+            "Implemented AI-driven metadata extraction by integrating Azure OpenAI GPT-4o for semantic parsing of document content",
+            "Built versioned JSON metadata cache to optimize costs and reduce redundant LLM usage",
+            "Created a hybrid semantic retrieval system combining HuggingFace transformer embeddings (all-MiniLM-L6-v2) and FAISS for semantic search",
+            "Integrated BM25 for keyword-based retrieval, enabling lightning-fast and accurate document lookups",
+            "Developed robust C#/SQL backend to support RESTful API endpoints for real-time queries",
+            "Integrated LangChain for advanced orchestration, connecting local vector stores with OpenAI services",
+            "Enabled confidence scoring and explainable AI features including answer completeness and document relevance",
+            "Enhanced user experience through custom Gradio UI with modern design, dark mode, and accessibility improvements",
+            "Documented the solution with best practices in code versioning, modular architecture, and continuous improvement",
+          ],
+          techStack: [
+            "Python",
+            "C#",
+            "Flask",
+            ".NET",
+            "RAG",
+            "Azure OpenAI",
+            "GPT-4o",
+            "HuggingFace",
+            "FAISS",
+            "BM25",
+            "LangChain",
+            "SQL",
+            "Gradio",
+          ],
+          impact: [
+            { value: "10K+", label: "Documents Indexed" },
+            { value: "95%", label: "Answer Accuracy" },
+            { value: "60%", label: "Cost Reduction" },
+          ],
+          context:
+            "The Inter-American Development Bank (IDB) is Latin America and the Caribbean's leading source of development financing. During my internship, I worked with data architects to build an enterprise-grade AI chatbot that revolutionized how the Office of the Secretary accesses institutional knowledge, combining cutting-edge LLM technology with traditional search methods.",
+        },
+        ey: {
+          company: "Ernst & Young (EY)",
+          role: "Cyber Security Consultant (Data Protection)",
+          icon: "fa-shield-halved",
+          location: "Remote",
+          period: "January 2022 - September 2024",
+          type: "Full-time",
+          description:
+            "Led end-to-end data protection and governance initiatives for Fortune 500 clients, implementing enterprise DLP solutions and achieving SPOT Award for excellence in data governance.",
+          responsibilities: [
+            "Led end-to-end analysis and response to Data Loss Prevention (DLP) incidents for a global user base using Symantec DLP and Microsoft Purview",
+            "Proactively safeguarded sensitive information and mitigated internal threats through advanced incident response protocols",
+            "Orchestrated the migration and optimization of security policies within Microsoft Purview",
+            "Configured rule sets and enhanced threat detection to support GDPR, ISO 27001, and client-specific compliance requirements",
+            "Conducted in-depth behavioural analysis and anomaly detection to identify and neutralize data leakage risks",
+            "Deployed advanced incident response protocols and root cause analysis techniques",
+            "Developed, refined, and documented DLP and access control policies, reducing false positives",
+            "Ensured seamless regulatory compliance and efficient remediation workflows",
+            "Automated data protection policy monitoring to improve efficiency and accuracy",
+            "Investigated anomalous data behaviors to prevent leaks and unauthorized access",
+            "Conducted risk assessments and compliance audits for multiple Fortune 500 clients",
+            "Earned certifications in BigID, Collibra, and OneTrust data governance platforms",
+            "Achieved SPOT Award for excellence in data governance and client service",
+          ],
+          techStack: [
+            "Microsoft Purview",
+            "Symantec DLP",
+            "BigID",
+            "Collibra",
+            "OneTrust",
+            "GDPR",
+            "ISO 27001",
+            "Python",
+            "PowerShell",
+          ],
+          impact: [
+            { value: "50K+", label: "Incidents Analyzed" },
+            { value: "40%", label: "False Positives Reduced" },
+            { value: "10+", label: "Clients Served" },
+          ],
+          context:
+            "At EY, I worked in the Cyber Security practice specializing in Data Protection, Governance and Privacy. I was responsible for implementing and managing enterprise-grade DLP solutions for some of the world's largest organizations, helping them protect sensitive data while maintaining regulatory compliance across multiple jurisdictions.",
+        },
+        hsbc: {
+          company: "HSBC",
+          role: "Analyst - Monitoring and Surveillance",
+          icon: "fa-landmark",
+          location: "Kraków, Poland",
+          period: "November 2020 - December 2021",
+          type: "Full-time",
+          description:
+            "Monitored internal communications and conducted risk assessments to detect insider threats and ensure regulatory compliance at one of the world's largest banks.",
+          responsibilities: [
+            "Monitored internal communications using CSURV and Magna Voice to detect insider threats and compliance violations",
+            "Analyzed employee communications for potential market abuse, fraud, and regulatory breaches",
+            "Conducted risk assessments and behavioral analysis to identify suspicious patterns",
+            "Collaborated with compliance teams to escalate and investigate high-risk cases",
+            "Ensured adherence to MiFID II, FCA regulations, and internal policies",
+            "Maintained detailed records and documentation for audit and regulatory purposes",
+            "Led diversity talks for 40+ HSBC employees to raise awareness about inclusion and representation",
+            "Contributed to improving surveillance processes and reducing false positives",
+          ],
+          techStack: [
+            "CSURV",
+            "Magna Voice",
+            "Surveillance Tools",
+            "Risk Analysis",
+            "MiFID II",
+            "FCA Compliance",
+          ],
+          impact: [
+            { value: "1000+", label: "Cases Reviewed" },
+            { value: "25+", label: "High-Risk Cases Escalated" },
+            { value: "40+", label: "Employees Trained" },
+          ],
+          context:
+            "HSBC is one of the world's largest banking and financial services organizations. In my role, I was responsible for monitoring employee communications to detect potential insider threats, market abuse, and regulatory violations, playing a critical role in protecting the bank's reputation and ensuring compliance with stringent financial regulations.",
+        },
+        revolut: {
+          company: "Revolut",
+          role: "KYC Operations Specialist",
+          icon: "fa-building-columns",
+          location: "Kraków, Poland",
+          period: "January 2020 - October 2020",
+          type: "Full-time",
+          description:
+            "Executed identity verification and onboarding for global clients, ensuring alignment with AML/KYC regulations while co-founding the BAME Guild to drive diversity initiatives.",
+          responsibilities: [
+            "Executed identity verification and onboarding for global clients using advanced authentication tools",
+            "Conducted rigorous compliance checks to ensure alignment with AML/KYC, GDPR, and financial regulations",
+            "Analyzed customer documentation and transactional data to identify fraud, irregularities, and potential risks",
+            "Contributed to a robust risk management strategy through proactive fraud detection",
+            "Managed escalated cases in the Complaints department, resolving complex issues under pressure",
+            "Maintained high standards of customer experience while ensuring regulatory compliance",
+            "Co-founded and led the BAME Guild, organizing initiatives to raise racial awareness",
+            "Fostered an inclusive workplace culture through diversity and inclusion programs",
+          ],
+          techStack: [
+            "KYC/AML Tools",
+            "Identity Verification",
+            "GDPR Compliance",
+            "Risk Assessment",
+            "Customer Service",
+          ],
+          impact: [
+            { value: "5000+", label: "Customers Verified" },
+            { value: "98%", label: "Compliance Rate" },
+            { value: "50+", label: "Fraud Cases Detected" },
+          ],
+          context:
+            "Revolut is a UK-based financial technology company offering banking services including currency exchange, debit cards, and peer-to-peer payments. During my time there, I played a dual role: ensuring rigorous compliance with financial regulations while also championing diversity and inclusion as co-founder of the BAME Guild.",
+        },
+      };
+
+      // Get experience ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const experienceId = urlParams.get("id") || "cloudwalk";
+      const experience = experiences[experienceId];
+
+      if (experience) {
+        // Render header
+        document.getElementById("experience-header").innerHTML = `
+          <div class="company-info">
+            <div class="company-logo-large">
+              <i class="fas ${experience.icon}"></i>
+            </div>
+            <div class="company-details">
+              <h1>${experience.role}</h1>
+              <h2>${experience.company}</h2>
+              <div class="job-meta-detail">
+                <span><i class="fas fa-calendar"></i> ${experience.period}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${experience.location}</span>
+                <span><i class="fas fa-briefcase"></i> ${experience.type}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render content
+        let contentHtml = `
+          <div class="detail-content">
+            <h3 class="section-title-detail">
+              <i class="fas fa-info-circle"></i>
+              Overview
+            </h3>
+            <p class="description-text">${experience.description}</p>
+
+            <h3 class="section-title-detail">
+              <i class="fas fa-tasks"></i>
+              Key Responsibilities
+            </h3>
+            <ul class="responsibilities-list">
+              ${experience.responsibilities
+                .map(
+                  resp => `
+                <li>
+                  <i class="fas fa-check-circle"></i>
+                  <span>${resp}</span>
+                </li>
+              `
+                )
+                .join("")}
+            </ul>
+
+            <h3 class="section-title-detail">
+              <i class="fas fa-code"></i>
+              Technologies & Tools
+            </h3>
+            <div class="tech-stack-detail">
+              ${experience.techStack
+                .map(
+                  tech => `
+                <span class="tech-badge-detail">${tech}</span>
+              `
+                )
+                .join("")}
+            </div>
+
+            ${
+              experience.impact
+                ? `
+            <h3 class="section-title-detail">
+              <i class="fas fa-chart-line"></i>
+              Impact & Metrics
+            </h3>
+            <div class="impact-metrics">
+              ${experience.impact
+                .map(
+                  metric => `
+                <div class="metric-card">
+                  <div class="metric-value">${metric.value}</div>
+                  <div class="metric-label">${metric.label}</div>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+            `
+                : ""
+            }
+
+            <div class="context-section">
+              <h3><i class="fas fa-lightbulb"></i> Context</h3>
+              <p>${experience.context}</p>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("experience-content").innerHTML = contentHtml;
+      } else {
+        document.getElementById("experience-content").innerHTML = `
+          <div class="detail-content">
+            <h3>Experience not found</h3>
+            <p>Please return to the portfolio and select a valid experience.</p>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+</html>
