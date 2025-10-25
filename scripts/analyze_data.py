@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Cinema Data Analysis
-Generate insights and statistics from watched movies
+Cinema Data Analysis - ENHANCED with Keywords & Deep Dive
 """
 
 import json
@@ -9,16 +8,31 @@ import os
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 import numpy as np
-
 import pandas as pd
+import warnings
+warnings.filterwarnings('ignore')
+
+try:
+    from sklearn.cluster import KMeans
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
 
 WATCHLIST_CANDIDATES = [
     Path("data/Watched.csv"),
-    Path("pages/Watched.csv"),
-    Path("/mnt/data/Watched.csv"),
-    Path("/mnt/project/Watched.csv"),
+    Path("data/data/Watched.csv"),
+    Path("data/Watched_enriched.csv"),
+    Path("data/data/Watched_enriched.csv"),
+    Path("data/enriched_movies.csv"),
+    Path("data/data/enriched_movies.csv"),
+]
+
+PEOPLE_CANDIDATES = [
+    Path("data/enriched_people.csv"),
+    Path("data/data/enriched_people.csv"),
 ]
 
 def resolve_watchlist(cli_arg: Optional[str] = None) -> Path:
@@ -26,89 +40,95 @@ def resolve_watchlist(cli_arg: Optional[str] = None) -> Path:
         p = Path(cli_arg).expanduser().resolve()
         if p.exists():
             return p
-        raise FileNotFoundError(f"Watchlist not found at: {p}")
     for p in WATCHLIST_CANDIDATES:
         if p.exists():
             return p.resolve()
-    tried = "\n  - " + "\n  - ".join(str(p) for p in WATCHLIST_CANDIDATES)
-    raise FileNotFoundError("Could not find Watched.csv. I looked in:" + tried)
+    raise FileNotFoundError("Could not find movie data CSV")
+
+def resolve_people() -> Optional[Path]:
+    for p in PEOPLE_CANDIDATES:
+        if p.exists():
+            return p.resolve()
+    return None
 
 def load_data(filepath: Optional[str] = None) -> pd.DataFrame:
-    """
-    Prefer enriched CSV if present; otherwise fall back to the watchlist.
-    """
-    enriched = Path("data/Watched_enriched.csv")
     if filepath:
         fp = Path(filepath).expanduser().resolve()
-    elif enriched.exists():
-        fp = enriched
     else:
         fp = resolve_watchlist(None)
-
     df = pd.read_csv(fp, encoding="utf-8-sig")
-    print(f"Loaded {len(df)} movies from {fp}")
+    print(f"✅ Loaded {len(df)} movies from {fp}")
     return df
 
+def load_people_data() -> Optional[pd.DataFrame]:
+    people_path = resolve_people()
+    if people_path:
+        try:
+            df = pd.read_csv(people_path, encoding="utf-8-sig")
+            print(f"✅ Loaded {len(df)} people/actors from {people_path}")
+            return df
+        except Exception as e:
+            print(f"⚠️  Could not load people data: {e}")
+    return None
 
-# ---------- NEW: schema-compat helpers ----------
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    print("\n🧹 CLEANING DATA...")
+    original_count = len(df)
+    df = df.drop_duplicates()
+    duplicates_removed = original_count - len(df)
+    if duplicates_removed > 0:
+        print(f"  ✓ Removed {duplicates_removed} duplicates")
+    
+    column_mapping = {
+        'Original Title': 'Title',
+        'originalTitle': 'Title',
+        'Runtime (mins)': 'Runtime',
+        'runtimeMinutes': 'Runtime',
+        'startYear': 'Year',
+    }
+    for old_col, new_col in column_mapping.items():
+        if old_col in df.columns and new_col not in df.columns:
+            df = df.rename(columns={old_col: new_col})
+    
+    if 'Year' in df.columns:
+        df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+    if 'Runtime' in df.columns:
+        df['Runtime'] = pd.to_numeric(df['Runtime'], errors='coerce')
+    
+    print(f"✅ Cleaning complete! {len(df)} records ready\n")
+    return df
 
-def pick_col(df: pd.DataFrame, *candidates, default=None):
-    """
-    Return the first existing column among candidates; otherwise default (Series of NaNs if default is None).
-    """
+def pick_col(df, *candidates, default=None):
     for c in candidates:
         if c in df.columns:
             return df[c]
-    if default is None:
-        return pd.Series([pd.NA] * len(df))
-    return default
+    return pd.Series([pd.NA] * len(df)) if default is None else default
 
-def to_num(s: pd.Series, allow_int=True):
-    """
-    Safely coerce a series (possibly strings) to numeric.
-    """
-    x = pd.to_numeric(s, errors="coerce")
-    return x
-
-def to_date(s: pd.Series):
-    return pd.to_datetime(s, errors="coerce")
-
+def to_num(s):
+    return pd.to_numeric(s, errors="coerce")
 
 def basic_stats(df):
-    """Calculate basic statistics (compatible with raw and enriched schemas)"""
     title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
-    runtime = to_num(pick_col(df, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
-    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
+    runtime = to_num(pick_col(df, 'Runtime', 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
     year = to_num(pick_col(df, 'Year', 'startYear'))
-
     earliest = int(year.min()) if year.notna().any() else None
     latest = int(year.max()) if year.notna().any() else None
-    span = int(latest - earliest) if earliest is not None and latest is not None else None
-
-    stats = {
+    span = int(latest - earliest) if earliest and latest else None
+    return {
         'total_movies': int(len(df)),
         'unique_movies': int(title.nunique(dropna=True)),
         'total_runtime_mins': float(runtime.sum()),
         'total_runtime_hours': round(float(runtime.sum()) / 60, 2),
         'total_runtime_days': round(float(runtime.sum()) / (60 * 24), 2),
-        'avg_rating': round(float(rating.mean()), 2) if rating.notna().any() else None,
-        'median_rating': float(rating.median()) if rating.notna().any() else None,
         'avg_runtime': round(float(runtime.mean()), 2) if len(runtime) else None,
-        'year_range': {
-            'earliest': earliest,
-            'latest': latest,
-            'span': span
-        }
+        'year_range': {'earliest': earliest, 'latest': latest, 'span': span}
     }
-    return stats
-
 
 def genre_analysis(df):
-    """Analyze genre distribution (supports Genres, genres, genres_merged)"""
     gcol = pick_col(df, 'genres_merged', 'Genres', 'genres')
     all_genres = []
-    for genres in gcol.dropna().astype(str):
-        # support comma or pipe separators
+    genre_by_movie = {}
+    for idx, genres in gcol.dropna().astype(str).items():
         parts = []
         for sep in [',', '|']:
             if sep in genres:
@@ -116,244 +136,344 @@ def genre_analysis(df):
                 break
         if not parts:
             parts = [genres.strip()]
-        all_genres.extend([p for p in parts if p])
-
+        valid_parts = [p for p in parts if p and p.lower() != 'nan']
+        all_genres.extend(valid_parts)
+        genre_by_movie[idx] = valid_parts
     genre_counts = Counter(all_genres)
+    genre_combos = Counter()
+    for genres in genre_by_movie.values():
+        if len(genres) >= 2:
+            combo = ' + '.join(sorted(genres[:2]))
+            genre_combos[combo] += 1
     return {
         'total_unique_genres': int(len(genre_counts)),
         'top_10_genres': dict(genre_counts.most_common(10)),
-        'genre_distribution': dict(genre_counts)
+        'genre_distribution': dict(genre_counts),
+        'top_genre_combinations': dict(genre_combos.most_common(10)),
+        'genre_by_movie': genre_by_movie
     }
 
+# NEW: KEYWORD ANALYSIS
+def keyword_analysis(df):
+    """Analyze keywords from movie metadata"""
+    print("\n🔍 ANALYZING KEYWORDS...")
+    
+    # Try different keyword columns
+    keyword_cols = ['tmdb_keywords', 'keywords', 'plot_keywords']
+    keyword_col = None
+    for col in keyword_cols:
+        if col in df.columns:
+            keyword_col = col
+            break
+    
+    if not keyword_col:
+        print("  ⚠️  No keyword column found")
+        return {}
+    
+    all_keywords = []
+    keyword_by_movie = {}
+    
+    for idx, keywords in df[keyword_col].dropna().astype(str).items():
+        # Keywords might be JSON, comma-separated, or pipe-separated
+        keywords_list = []
+        
+        # Try JSON parsing
+        if keywords.startswith('[') or keywords.startswith('{'):
+            try:
+                import json
+                parsed = json.loads(keywords)
+                if isinstance(parsed, list):
+                    keywords_list = [k.get('name', k) if isinstance(k, dict) else str(k) for k in parsed]
+                elif isinstance(parsed, dict):
+                    keywords_list = list(parsed.values())
+            except:
+                pass
+        
+        # Try comma/pipe separation
+        if not keywords_list:
+            for sep in [',', '|', ';']:
+                if sep in keywords:
+                    keywords_list = [k.strip() for k in keywords.split(sep)]
+                    break
+        
+        # Clean and add
+        keywords_list = [k for k in keywords_list if k and len(k) > 2 and k.lower() != 'nan']
+        all_keywords.extend(keywords_list)
+        if keywords_list:
+            keyword_by_movie[idx] = keywords_list
+    
+    keyword_counts = Counter(all_keywords)
+    
+    print(f"  ✓ Found {len(keyword_counts)} unique keywords")
+    
+    return {
+        'total_unique_keywords': len(keyword_counts),
+        'top_50_keywords': dict(keyword_counts.most_common(50)),
+        'keyword_distribution': dict(keyword_counts),
+        'keyword_by_movie': keyword_by_movie
+    }
+
+# NEW: DESCRIPTION/OVERVIEW ANALYSIS
+def description_analysis(df):
+    """Analyze movie descriptions/overviews using TF-IDF"""
+    print("\n📝 ANALYZING DESCRIPTIONS...")
+    
+    # Try different description columns
+    desc_cols = ['tmdb_overview', 'overview', 'description', 'plot', 'omdb_plot']
+    desc_col = None
+    for col in desc_cols:
+        if col in df.columns:
+            desc_col = col
+            break
+    
+    if not desc_col:
+        print("  ⚠️  No description column found")
+        return {}
+    
+    descriptions = df[desc_col].dropna().astype(str)
+    
+    if len(descriptions) < 10:
+        print("  ⚠️  Not enough descriptions for analysis")
+        return {}
+    
+    if not HAS_SKLEARN:
+        print("  ⚠️  Install scikit-learn for advanced description analysis")
+        # Simple word frequency
+        all_words = []
+        for desc in descriptions:
+            words = desc.lower().split()
+            words = [w.strip('.,!?;:') for w in words if len(w) > 4]
+            all_words.extend(words)
+        
+        word_counts = Counter(all_words)
+        return {
+            'top_description_words': dict(word_counts.most_common(30)),
+            'total_words_analyzed': len(all_words)
+        }
+    
+    # Advanced TF-IDF analysis
+    try:
+        vectorizer = TfidfVectorizer(
+            max_features=50,
+            stop_words='english',
+            min_df=2,
+            max_df=0.8
+        )
+        
+        tfidf_matrix = vectorizer.fit_transform(descriptions)
+        feature_names = vectorizer.get_feature_names_out()
+        
+        # Get top terms by TF-IDF score
+        tfidf_scores = tfidf_matrix.sum(axis=0).A1
+        top_indices = tfidf_scores.argsort()[-30:][::-1]
+        top_terms = {feature_names[i]: float(tfidf_scores[i]) for i in top_indices}
+        
+        print(f"  ✓ Analyzed {len(descriptions)} descriptions")
+        
+        return {
+            'top_tfidf_terms': top_terms,
+            'total_descriptions_analyzed': len(descriptions),
+            'unique_terms': len(feature_names)
+        }
+    except Exception as e:
+        print(f"  ⚠️  TF-IDF analysis error: {e}")
+        return {}
 
 def decade_analysis(df):
-    """Analyze movies by decade (works with Year/startYear)"""
     year = to_num(pick_col(df, 'Year', 'startYear'))
     decade = ((year // 10) * 10).dropna().astype(int)
     tmp = df.copy()
     tmp['Decade'] = decade
     decade_counts = tmp['Decade'].value_counts().sort_index()
-
+    runtime = to_num(pick_col(tmp, 'Runtime', 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
     decade_stats = {}
-    rating = to_num(pick_col(tmp, 'IMDb Rating', 'averageRating'))
-    runtime = to_num(pick_col(tmp, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
-
     for d in decade_counts.index:
         mask = tmp['Decade'] == d
         decade_stats[int(d)] = {
             'count': int(mask.sum()),
-            'avg_rating': round(float(rating[mask].mean()), 2) if rating[mask].notna().any() else None,
             'total_runtime_hours': round(float(runtime[mask].sum()) / 60, 2),
         }
     return decade_stats
 
-
 def director_analysis(df):
-    """Analyze most-watched directors (only if name column exists)"""
     if 'Directors' not in df.columns:
-        return {}  # IMDb crew 'directors' are nconsts; we skip that case.
-
+        return {}
     all_directors = []
     for directors in df['Directors'].dropna().astype(str):
         all_directors.extend([d.strip() for d in directors.split(',') if d.strip()])
-
     director_counts = Counter(all_directors)
-
-    # detailed stats for top directors
     title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
-    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
-    runtime = to_num(pick_col(df, 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
-
+    runtime = to_num(pick_col(df, 'Runtime', 'Runtime (mins)', 'runtimeMinutes')).fillna(0)
     top_directors = {}
-    for director, count in director_counts.most_common(15):
-        director_movies = df[df['Directors'].str.contains(director, na=False)]
+    for director, count in director_counts.most_common(20):
+        director_movies = df[df['Directors'].str.contains(director, na=False, regex=False)]
         top_directors[director] = {
             'movie_count': int(count),
-            'avg_rating': round(float(rating.loc[director_movies.index].mean()), 2) if rating.loc[director_movies.index].notna().any() else None,
             'total_runtime_hours': round(float(runtime.loc[director_movies.index].sum()) / 60, 2),
-            'movies': title.loc[director_movies.index].dropna().astype(str).tolist(),
+            'movies': title.loc[director_movies.index].dropna().astype(str).tolist()[:10],
         }
     return top_directors
 
+def actor_analysis(people_df, movies_df):
+    if people_df is None or len(people_df) == 0:
+        return {}
+    print("\n🎭 ANALYZING ACTORS...")
+    if 'primaryProfession' in people_df.columns:
+        actors = people_df[people_df['primaryProfession'].str.contains('actor|actress', case=False, na=False)].copy()
+    else:
+        actors = people_df.copy()
+    print(f"  Found {len(actors)} actors")
+    actor_stats = {}
+    for idx, row in actors.head(100).iterrows():
+        name = row.get('primaryName', 'Unknown')
+        birth_year = row.get('birthYear')
+        known_for = row.get('knownForTitles', '')
+        if pd.notna(known_for):
+            known_titles = str(known_for).split(',')
+            matches = 0
+            if 'Const' in movies_df.columns:
+                our_ids = set(movies_df['Const'].dropna().astype(str))
+                matches = len([t for t in known_titles if t.strip() in our_ids])
+            if matches > 0 or len(actor_stats) < 50:
+                actor_stats[name] = {
+                    'appearances': matches,
+                    'birth_year': int(birth_year) if pd.notna(birth_year) and birth_year != '\\N' else None,
+                    'known_for_count': len(known_titles)
+                }
+    sorted_actors = dict(sorted(actor_stats.items(), key=lambda x: x[1]['appearances'], reverse=True)[:30])
+    return {'total_actors': len(actors), 'top_actors': sorted_actors, 'actors_analyzed': len(actor_stats)}
 
-def rating_distribution(df):
-    """Analyze rating distribution (works with IMDb Rating or averageRating)"""
-    rating = to_num(pick_col(df, 'IMDb Rating', 'averageRating'))
-    title = pick_col(df, 'Title', 'Original Title', 'originalTitle')
-    year = to_num(pick_col(df, 'Year', 'startYear'))
+def ml_analysis(df, genre_data):
+    if not HAS_SKLEARN:
+        return {'note': 'Install scikit-learn for ML features'}
+    print("\n🤖 PERFORMING ML ANALYSIS...")
+    results = {}
+    try:
+        print("  📊 Clustering movies by genre...")
+        genre_by_movie = genre_data.get('genre_by_movie', {})
+        all_genres = list(set(g for genres in genre_by_movie.values() for g in genres))
+        if len(all_genres) > 0 and len(genre_by_movie) > 10:
+            genre_matrix = []
+            movie_indices = []
+            for idx, genres in genre_by_movie.items():
+                if len(genres) > 0:
+                    row = [1 if g in genres else 0 for g in all_genres]
+                    genre_matrix.append(row)
+                    movie_indices.append(idx)
+            if len(genre_matrix) > 10:
+                genre_matrix = np.array(genre_matrix)
+                n_clusters = min(8, len(genre_matrix) // 50)
+                if n_clusters >= 2:
+                    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+                    clusters = kmeans.fit_predict(genre_matrix)
+                    cluster_genres = {}
+                    for i in range(n_clusters):
+                        cluster_mask = clusters == i
+                        cluster_movies = [movie_indices[j] for j, mask in enumerate(cluster_mask) if mask]
+                        cluster_genre_counts = Counter()
+                        for idx in cluster_movies[:50]:
+                            cluster_genre_counts.update(genre_by_movie.get(idx, []))
+                        top_genres = [g for g, _ in cluster_genre_counts.most_common(3)]
+                        cluster_name = ' + '.join(top_genres) if top_genres else f'Cluster {i}'
+                        cluster_genres[cluster_name] = {
+                            'size': int(cluster_mask.sum()),
+                            'percentage': round(float(cluster_mask.sum() / len(clusters) * 100), 2)
+                        }
+                    results['genre_clustering'] = cluster_genres
+                    print(f"  ✓ Created {n_clusters} genre clusters")
+    except Exception as e:
+        print(f"  ⚠️  Clustering error: {e}")
+    return results
 
-    rating_bins = pd.cut(rating, bins=[0, 5, 6, 7, 8, 9, 10],
-                         labels=['0-5', '5-6', '6-7', '7-8', '8-9', '9-10'])
-    distribution = rating_bins.value_counts().sort_index()
-
-    highest_title = None
-    highest_rating = None
-    highest_year = None
-    if rating.notna().any():
-        idx = rating.idxmax()
-        highest_title = str(title.loc[idx]) if pd.notna(title.loc[idx]) else None
-        highest_rating = float(rating.max())
-        highest_year = int(year.loc[idx]) if pd.notna(year.loc[idx]) else None
-
-    above_8 = rating[rating >= 8.0]
+def prepare_graph_data(df, genres, decades, directors):
+    year = to_num(pick_col(df, 'Year', 'startYear')).dropna()
+    year_counts = year.value_counts().sort_index()
+    runtime = to_num(pick_col(df, 'Runtime', 'Runtime (mins)', 'runtimeMinutes')).dropna()
+    runtime_bins = pd.cut(runtime, bins=[0, 60, 90, 120, 150, 180, 600], 
+                          labels=['<60', '60-90', '90-120', '120-150', '150-180', '180+'])
+    runtime_dist = runtime_bins.value_counts().sort_index()
     return {
-        'distribution': {str(k): int(v) for k, v in distribution.items()},
-        'highest_rated': {
-            'title': highest_title,
-            'rating': highest_rating,
-            'year': highest_year
+        'timeline': {
+            'years': [int(y) for y in year_counts.index],
+            'counts': [int(c) for c in year_counts.values]
         },
-        'movies_above_8': int(above_8.notna().sum()),
-        'percentage_above_8': round(float(above_8.notna().sum()) / len(df) * 100, 2) if len(df) else 0.0
+        'runtime_histogram': {
+            'bins': [str(b) for b in runtime_dist.index],
+            'counts': [int(c) for c in runtime_dist.values]
+        }
     }
-
-
-def yearly_watching_pattern(df):
-    """Analyze watching patterns over years using Created/Date Rated/Modified/Release Date"""
-    created = to_date(pick_col(df, 'Created'))
-    if created.isna().all():
-        created = to_date(pick_col(df, 'Date Rated'))
-    if created.isna().all():
-        created = to_date(pick_col(df, 'Modified'))
-    if created.isna().all():
-        created = to_date(pick_col(df, 'Release Date'))
-
-    if created.isna().all():
-        return {'movies_per_year': {}, 'most_active_year': {'year': None, 'count': 0}, 'total_years_tracked': 0}
-
-    years = created.dt.year.dropna().astype(int)
-    yearly_counts = years.value_counts().sort_index()
-
-    most_year = int(yearly_counts.idxmax()) if not yearly_counts.empty else None
-    most_count = int(yearly_counts.max()) if not yearly_counts.empty else 0
-
-    return {
-        'movies_per_year': {int(k): int(v) for k, v in yearly_counts.items()},
-        'most_active_year': {'year': most_year, 'count': most_count},
-        'total_years_tracked': int(len(yearly_counts))
-    }
-
 
 def generate_insights(df):
-    """Generate comprehensive insights"""
     print("\n" + "="*60)
-    print("CINEMA ANALYTICS - COMPREHENSIVE INSIGHTS")
+    print("🎬 CINEMA ANALYTICS - ENHANCED with KEYWORDS")
     print("="*60)
     
-    # Basic Stats
-    print("\n📊 BASIC STATISTICS")
-    print("-"*60)
     stats = basic_stats(df)
-    for key, value in stats.items():
-        if isinstance(value, dict):
-            print(f"\n{key.replace('_', ' ').title()}:")
-            for k, v in value.items():
-                print(f"  {k}: {v}")
-        else:
-            print(f"{key.replace('_', ' ').title()}: {value}")
-    
-    # Genre Analysis
-    print("\n🎬 GENRE ANALYSIS")
-    print("-"*60)
     genres = genre_analysis(df)
-    print(f"Total Unique Genres: {genres['total_unique_genres']}")
-    print("\nTop 10 Genres:")
-    for genre, count in genres['top_10_genres'].items():
-        print(f"  {genre}: {count} movies")
-    
-    # Decade Analysis
-    print("\n📅 DECADE BREAKDOWN")
-    print("-"*60)
+    keywords = keyword_analysis(df)
+    descriptions = description_analysis(df)
     decades = decade_analysis(df)
-    for decade, stats in sorted(decades.items()):
-        print(f"\n{decade}s:")
-        print(f"  Movies: {stats['count']}")
-        print(f"  Avg Rating: {stats['avg_rating']}")
-        print(f"  Total Hours: {stats['total_runtime_hours']}")
-    
-    # Director Analysis
-    print("\n🎥 TOP DIRECTORS")
-    print("-"*60)
     directors = director_analysis(df)
-    for director, stats in list(directors.items())[:10]:
-        print(f"\n{director}:")
-        print(f"  Movies Watched: {stats['movie_count']}")
-        print(f"  Avg Rating: {stats['avg_rating']}")
-        print(f"  Total Hours: {stats['total_runtime_hours']}")
     
-    # Rating Distribution
-    print("\n⭐ RATING DISTRIBUTION")
-    print("-"*60)
-    ratings = rating_distribution(df)
-    for rating_range, count in ratings['distribution'].items():
-        print(f"{rating_range}: {count} movies")
-    print(f"\nHighest Rated: {ratings['highest_rated']['title']} ({ratings['highest_rated']['rating']})")
-    print(f"Movies Rated 8.0+: {ratings['movies_above_8']} ({ratings['percentage_above_8']}%)")
+    people_df = load_people_data()
+    actors = {}
+    if people_df is not None:
+        actors = actor_analysis(people_df, df)
     
-    # Watching Patterns
-    print("\n📈 WATCHING PATTERNS")
-    print("-"*60)
-    patterns = yearly_watching_pattern(df)
-    print(f"Total Years Tracked: {patterns['total_years_tracked']}")
-    print(f"Most Active Year: {patterns['most_active_year']['year']} ({patterns['most_active_year']['count']} movies)")
+    ml_results = ml_analysis(df, genres)
+    graph_data = prepare_graph_data(df, genres, decades, directors)
     
-    print("\n" + "="*60)
+    print(f"\n✅ Analysis complete!")
+    print(f"📊 {stats['total_movies']} movies")
+    print(f"🎭 {genres['total_unique_genres']} genres")
+    if keywords:
+        print(f"🔍 {keywords.get('total_unique_keywords', 0)} keywords")
+    if descriptions:
+        print(f"📝 {descriptions.get('total_descriptions_analyzed', 0)} descriptions analyzed")
+    print(f"🎬 {len(directors)} directors")
+    if actors.get('total_actors'):
+        print(f"🌟 {actors['total_actors']} actors")
     
-    # Return all data for potential JSON export
     return {
         'basic_stats': stats,
-        'genres': genres,
+        'genres': {k: v for k, v in genres.items() if k != 'genre_by_movie'},
+        'keywords': keywords if keywords else {},
+        'descriptions': descriptions if descriptions else {},
         'decades': decades,
         'directors': directors,
-        'ratings': ratings,
-        'patterns': patterns,
+        'actors': actors,
+        'ml_insights': ml_results,
+        'graph_data': graph_data,
         'generated_at': datetime.now().isoformat()
     }
-    
-def _json_default(o):
-    # Safely convert NumPy / pandas scalars to native Python types
-    if isinstance(o, (np.integer, )):
-        return int(o)
-    if isinstance(o, (np.floating, )):
-        return float(o)
-    if isinstance(o, (np.bool_, )):
-        return bool(o)
-    return str(o)
 
-
-def save_insights(insights, output_path='data/cinema_insights.json'):
-    """Save insights to JSON file"""
-    os.makedirs(Path(output_path).parent, exist_ok=True)
+def save_insights(insights, output_path='data/data/cinema_insights.json'):
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(insights, f, indent=2, ensure_ascii=False, default=_json_default)
-    print(f"\n✅ Insights saved to {output_path}")
-
+        json.dump(insights, f, indent=2, ensure_ascii=False)
+    print(f"\n✅ Insights saved to: {output_path}")
 
 def main():
-    """Main execution"""
-    # Load data
-    df = load_data()
-    
-    # Generate insights
-    insights = generate_insights(df)
-    
-    # Save to JSON
-    save_insights(insights)
-    
-    # Additional analysis: Your rated movies
-    rated_movies = df[df['Your Rating'].notna()]
-    if len(rated_movies) > 0:
-        print("\n" + "="*60)
-        print("YOUR RATINGS ANALYSIS")
-        print("="*60)
-        print(f"Movies You Rated: {len(rated_movies)}")
-        print(f"Your Average Rating: {rated_movies['Your Rating'].mean():.2f}")
-        print(f"Your vs IMDb Avg Difference: {(rated_movies['Your Rating'].mean() - rated_movies['IMDb Rating'].mean()):.2f}")
-        
-        # Your highest rated
-        highest = rated_movies.loc[rated_movies['Your Rating'].idxmax()]
-        print(f"\nYour Highest Rated: {highest['Title']} ({highest['Your Rating']})")
-        print("="*60)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input', type=str)
+    parser.add_argument('--output', type=str, default='data/data/cinema_insights.json')
+    parser.add_argument('--no-clean', action='store_true')
+    args = parser.parse_args()
+    try:
+        df = load_data(args.input)
+        if not args.no_clean:
+            df = clean_data(df)
+        insights = generate_insights(df)
+        save_insights(insights, args.output)
+        print("\n🎉 Dashboard ready!")
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+    return 0
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    exit(main())
